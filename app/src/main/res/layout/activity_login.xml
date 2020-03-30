@@ -24,8 +24,8 @@
         android:layout_below="@+id/login_image"
         android:layout_centerHorizontal="true"
         android:fontFamily="@font/shrikhand"
-        android:textColor="@android:color/black"
         android:text="@string/app_name"
+        android:textColor="@android:color/black"
         android:textSize="36sp" />
 
     <com.google.android.gms.common.SignInButton

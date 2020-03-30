@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/cardview_height">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:background="@drawable/border">
+
+        <RelativeLayout
+            android:layout_width="@dimen/date_width"
+            android:layout_height="@dimen/date_height"
+            android:orientation="vertical"
+            android:background="@drawable/border">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="15dp"
+                android:id="@+id/date_day_text"
+                android:gravity="center"
+                android:fontFamily="@font/roboto"
+                android:text="@string/test"
+                android:textColor="@android:color/black"
+                android:background="@drawable/border"
+                android:textSize="8sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="17dp"
+                android:id="@+id/date_day_number"
+                android:layout_below="@id/date_day_text"
+                android:background="@drawable/border"
+                android:text="@string/test"
+                android:layout_marginTop="-1dp"
+                android:layout_marginBottom="-1dp"
+                android:gravity="center"
+                android:textSize="16sp"
+                android:textColor="@android:color/black"
+                tools:layout_editor_absoluteX="0dp"
+                tools:layout_editor_absoluteY="14dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="15dp"
+                android:background="@drawable/border"
+                android:layout_below="@id/date_day_number"
+                android:text="@string/test"
+                android:gravity="center"
+                android:textSize="8sp"
+                android:textColor="@android:color/black"
+                tools:layout_editor_absoluteX="0dp"
+                tools:layout_editor_absoluteY="30dp" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="23dp"
+                android:text="@string/test" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="@string/test"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
