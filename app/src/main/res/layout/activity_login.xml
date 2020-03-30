@@ -28,4 +28,12 @@
         android:text="@string/app_name"
         android:textSize="36sp" />
 
+    <com.google.android.gms.common.SignInButton
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:id="@+id/login_signIn"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:layout_below="@id/login_text"/>
+
 </RelativeLayout>
