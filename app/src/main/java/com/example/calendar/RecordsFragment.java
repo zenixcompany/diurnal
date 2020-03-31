@@ -1,11 +1,16 @@
 package com.example.calendar;
 
+import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.util.ArrayList;
+
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 
 /**
@@ -21,7 +26,22 @@ public class RecordsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_records, container, false);
+        View view =  inflater.inflate(R.layout.fragment_records, container, false);
+
+        RecyclerView recordsRecycler = view.findViewById(R.id.records_recycler);
+
+        ArrayList<Record> records = new ArrayList<>();
+
+        records.add(new Record(Calendar.getInstance().getTime()));
+        records.add(new Record(Calendar.getInstance().getTime()));
+        records.add(new Record(Calendar.getInstance().getTime()));
+
+        RecordsAdapter recordsAdapter = new RecordsAdapter(records);
+        recordsRecycler.setAdapter(recordsAdapter);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+        recordsRecycler.setLayoutManager(layoutManager);
+
+        return view;
     }
 }

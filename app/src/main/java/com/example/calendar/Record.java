@@ -10,6 +10,10 @@ public class Record {
     private String text;
     private Date date;
 
+    public Record(Date date) {
+        this.date = date;
+    }
+
     public long getId() {
         return id;
     }

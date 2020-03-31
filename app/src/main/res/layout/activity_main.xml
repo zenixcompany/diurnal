@@ -6,10 +6,15 @@
     android:layout_height="match_parent"
     android:background="@android:color/white"
     tools:context=".MainActivity">
-
-    <include
+    
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/main_toolbar"
-        layout="@layout/toolbar_main" />
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/toolbarBackground"
+        android:elevation="@dimen/toolbar_elevation"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
     <fragment
         android:layout_width="wrap_content"
