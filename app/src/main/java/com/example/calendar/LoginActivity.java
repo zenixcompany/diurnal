@@ -72,7 +72,6 @@ public class LoginActivity extends AppCompatActivity {
 
         btn_login.setOnClickListener(v -> SignInGoogle());
 
-
         if (mAuth.getCurrentUser() != null) {
             FirebaseUser user = mAuth.getCurrentUser();
             updateUI(user);
