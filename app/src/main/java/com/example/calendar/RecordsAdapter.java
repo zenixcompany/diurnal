@@ -5,6 +5,8 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.calendar.models.Record;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -60,11 +62,21 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         dayNumber.setText(String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
         month.setText(Objects.requireNonNull(calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US)).toUpperCase());
+
+        TextView recordTitle = cardView.findViewById(R.id.record_title);
+        TextView recordText = cardView.findViewById(R.id.record_text);
+
+        recordTitle.setText(recordList.get(position).getTitle());
+        recordText.setText(recordList.get(position).getText());
     }
 
     @Override
     public int getItemCount() {
         return recordList.size();
+    }
+
+    public void addRecord(Record record) {
+        recordList.add(record);
     }
 
     private void initColors() {

@@ -48,8 +48,7 @@ public class LoginActivity extends AppCompatActivity {
 
     static final int GOOGLE_SIGN_IN = 123;
     FirebaseAuth mAuth;
-    Button btn_login;
-    TextView text;
+    SignInButton btn_login;
     GoogleSignInClient mGoogleSignInClient;
 
 
@@ -59,7 +58,6 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         btn_login = findViewById(R.id.login_signIn);
-        text = findViewById(R.id.text);
 
         mAuth = FirebaseAuth.getInstance();
 
@@ -73,8 +71,7 @@ public class LoginActivity extends AppCompatActivity {
         btn_login.setOnClickListener(v -> SignInGoogle());
 
         if (mAuth.getCurrentUser() != null) {
-            FirebaseUser user = mAuth.getCurrentUser();
-            updateUI(user);
+            signIn();
         }
     }
 
@@ -94,14 +91,17 @@ public class LoginActivity extends AppCompatActivity {
                         Log.d("TAG", "signInWithCredential:success");
 
                         FirebaseUser user = mAuth.getCurrentUser();
-                        updateUI(user);
+
+                        if (user != null) {
+                            signIn();
+                        }
+
                     } else {
 
                         Log.w("TAG", "signInWithCredential:failure", task.getException());
 
                         Toast.makeText(LoginActivity.this, "Authentication failed.",
                                 Toast.LENGTH_SHORT).show();
-                        updateUI(null);
                     }
                 });
     }
@@ -121,22 +121,13 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void updateUI(FirebaseUser user) {
-        if (user != null) {
-            String name = user.getDisplayName();
-            String email = user.getEmail();
-
-            text.append("Info : \n");
-            text.append(name + "\n");
-            text.append(email);
-
-            btn_login.setVisibility(View.INVISIBLE);
-        } else {
-            text.setText("Firebase Login \n");
-
-            btn_login.setVisibility(View.VISIBLE);
-        }
+    private void signIn() {
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
+
 }
 
 
