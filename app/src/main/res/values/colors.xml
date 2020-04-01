@@ -4,5 +4,10 @@
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
 
+    <color name="cardViewBackground">#E3F2FD</color>
+
     <color name="loginBackground">#E0E0E0</color>
+    <color name="toolbarBackground">#F5F5F5</color>
+    
+    <color name="materialGrey">#E0E0E0</color>
 </resources>
