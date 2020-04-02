@@ -155,6 +155,7 @@ public class RecordActivity extends AppCompatActivity {
         return image;
     }
 
+    //створює файл для фотографії
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         // Ensure that there's a camera activity to handle the intent
@@ -187,6 +188,7 @@ public class RecordActivity extends AppCompatActivity {
         }
     }
 
+    //додає фото в галерею
     private void galleryAddPic() {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         File f = new File(currentPhotoPath);
@@ -195,6 +197,7 @@ public class RecordActivity extends AppCompatActivity {
         this.sendBroadcast(mediaScanIntent);
     }
 
+    //незнаю чи то треба то для великих зображень
     private void setPic() {
         // Get the dimensions of the View
         int targetW = imageView.getWidth();
