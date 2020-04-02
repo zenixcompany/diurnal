@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     tools:context=".RecordsFragment">
 
-    <!-- TODO: Update blank fragment layout -->
+
     <androidx.recyclerview.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -13,5 +13,6 @@
         android:layout_marginTop="7dp"
         android:id="@+id/records_recycler"
         android:scrollbars="vertical" />
+
 
 </FrameLayout>

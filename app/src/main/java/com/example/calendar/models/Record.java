@@ -1,33 +1,39 @@
-package com.example.calendar;
+package com.example.calendar.models;
+
+import com.google.firebase.database.IgnoreExtraProperties;
+import com.google.firebase.firestore.ServerTimestamp;
 
 import java.util.Date;
 
+@IgnoreExtraProperties
 public class Record {
-    private long id;
-    private long listPosition;
+    private String user_id;
+    private String note_id;
 
     private String title;
     private String text;
-    private Date date;
+    private @ServerTimestamp Date date;
+
+    public Record() {}
 
     public Record(Date date) {
         this.date = date;
     }
 
-    public long getId() {
-        return id;
+    public String getUser_id() {
+        return user_id;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public void setUser_id(String user_id) {
+        this.user_id = user_id;
     }
 
-    public long getListPosition() {
-        return listPosition;
+    public String getNote_id() {
+        return note_id;
     }
 
-    public void setListPosition(long listPosition) {
-        this.listPosition = listPosition;
+    public void setNote_id(String note_id) {
+        this.note_id = note_id;
     }
 
     public String getTitle() {
