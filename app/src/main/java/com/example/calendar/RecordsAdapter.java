@@ -1,6 +1,7 @@
 package com.example.calendar;
 
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -21,6 +22,8 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     private ArrayList<Record> recordList;
     private HashMap<String, Integer> dayNamesColors;
 
+    private RecordsListener listener;
+
     private Calendar calendar = Calendar.getInstance();
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -35,6 +38,14 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     public RecordsAdapter(ArrayList<Record> recordList) {
         this.recordList = recordList;
         initColors();
+    }
+
+    public static interface RecordsListener {
+        public void onClick(int position);
+    }
+
+    public void setListener(RecordsListener listener) {
+        this.listener = listener;
     }
 
     @NonNull
@@ -68,6 +79,11 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         recordTitle.setText(recordList.get(position).getTitle());
         recordText.setText(recordList.get(position).getText());
+
+        cardView.setOnClickListener(view -> {
+            if (listener != null)
+                listener.onClick(position);
+        });
     }
 
     @Override
@@ -76,7 +92,26 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     }
 
     public void addRecord(Record record) {
-        recordList.add(record);
+        // TODO Try to make this shit filtered explicitly by RecyclerView filter
+        recordList.add(0, record);
+    }
+
+    public void updateRecord(int position, Record record) {
+        recordList.get(position).setTitle(record.getTitle());
+        recordList.get(position).setText(record.getText());
+
+        Record toDelete = recordList.get(position);
+        recordList.remove(position);
+
+        recordList.add(0, toDelete);
+
+        notifyDataSetChanged();
+    }
+
+    public void deleteRecord(int position) {
+        recordList.remove(position);
+
+        notifyDataSetChanged();
     }
 
     private void initColors() {

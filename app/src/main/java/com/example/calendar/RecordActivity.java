@@ -1,16 +1,25 @@
 package com.example.calendar;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.InputType;
+import android.view.KeyEvent;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.EditText;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.content.res.ResourcesCompat;
 
 import android.content.Context;
 import android.content.Intent;
@@ -26,8 +35,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,20 +63,26 @@ public class RecordActivity extends AppCompatActivity {
 
     public static final String TITLE = "TITLE";
     public static final String RECORD = "RECORD";
+    public static final String NOTE_ID = "NOTE_ID";
+    public static final String NOTE_POSITION = "NOTE_POSITION";
 
 
 
     // false - CREATE_NOTE, true - EDIT_NOTE
     private boolean action = false;
+    private boolean isEditing = false;
 
     private Intent intent;
 
     private EditText titleView;
     private EditText recordView;
+    private Menu menu;
     private ImageView imageView;//findViewById
 
     private String title;
     private String record;
+    private String recordId;
+    private String recordPosition;
 
     String currentPhotoPath;
 
@@ -75,21 +94,31 @@ public class RecordActivity extends AppCompatActivity {
         titleView = findViewById(R.id.recordActivity_title);
         recordView = findViewById(R.id.recordActivity_text);
 
-        title = titleView.getText().toString();
-        record = recordView.getText().toString();
-
         intent = getIntent();
         if (intent.getExtras() != null) {
             String actionStr = intent.getExtras().getString(ACTION);
-
             if (actionStr.contentEquals(CREATE_NOTE)) {
                 action = false;
             }
             else if (actionStr.contentEquals(EDIT_NOTE)) {
                 action = true;
+                recordId = getIntent().getStringExtra(NOTE_ID);
+                recordPosition = getIntent().getStringExtra(NOTE_POSITION);
+
+                titleView.setText(intent.getStringExtra(TITLE));
+                recordView.setText(intent.getStringExtra(RECORD));
+
+                titleView.setInputType(InputType.TYPE_NULL);
+                titleView.setOnKeyListener((view, i, keyEvent) -> true);
+                recordView.setInputType(InputType.TYPE_NULL);
+                recordView.setOnKeyListener((view, i, keyEvent) -> true);
+                recordView.setSingleLine(false);
+                isEditing = false;
             }
         }
 
+        title = titleView.getText().toString();
+        record = recordView.getText().toString();
 
         Toolbar toolbar = findViewById(R.id.recordActivity_toolbar);
         setSupportActionBar(toolbar);
@@ -103,15 +132,11 @@ public class RecordActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (action) {
+        if (checkChanges()) {
+            intent.putExtra(TITLE, titleView.getText().toString());
+            intent.putExtra(RECORD, recordView.getText().toString());
 
-        } else {
-            if (checkChanges()) {
-                intent.putExtra(TITLE, titleView.getText().toString());
-                intent.putExtra(RECORD, recordView.getText().toString());
-
-                setResult(RESULT_OK, intent);
-            }
+            setResult(RESULT_OK, intent);
         }
 
         super.onBackPressed();
@@ -126,16 +151,67 @@ public class RecordActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_record, menu);
+        this.menu = menu;
+        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
+        menu.getItem(1).setIcon(drawable);
 
         return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_record_edit_done:
+                if (isEditing) {
+                    titleView.setInputType(InputType.TYPE_NULL);
+                    titleView.setOnKeyListener((view, i, keyEvent) -> true);
+                    recordView.setInputType(InputType.TYPE_NULL);
+                    recordView.setOnKeyListener((view, i, keyEvent) -> true);
+                    recordView.setSingleLine(false);
 
+                    Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
+                    item.setIcon(drawable);
+
+                    isEditing = false;
+                } else {
+                    titleView.setInputType(InputType.TYPE_CLASS_TEXT);
+                    titleView.setOnKeyListener(null);
+                    recordView.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+                    recordView.setOnKeyListener(null);
+
+                    Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
+                    item.setIcon(drawable);
+
+                    isEditing = true;
+                }
+                break;
+            case R.id.action_record_delete:
+                confirmDeleteDialog();
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
 
     private boolean checkChanges() {
         // true if changes exist
         return !title.contentEquals(titleView.getText().toString()) ||
                 !record.contentEquals(recordView.getText().toString());
+    }
+
+    private void confirmDeleteDialog() {
+        AlertDialog.Builder deleteDialog = new AlertDialog.Builder(this);
+        deleteDialog.setMessage(R.string.deleteConfirmation);
+        deleteDialog.setCancelable(false);
+
+        deleteDialog.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
+            setResult(MainActivity.DELETE_NOTE, intent);
+            finish();
+        });
+
+        deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> { });
+
+        deleteDialog.create().show();
     }
 
     //Створює фото за унікальним ім'ям по даті і часу
