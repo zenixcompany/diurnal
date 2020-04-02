@@ -22,7 +22,6 @@ import android.view.inputmethod.EditorInfo;
 
 import java.util.Date;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = MainActivity.class.getSimpleName();
@@ -89,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
 
                            if (recordsFragment != null && recordsFragment.isAdded()) {
                                recordsFragment.recordsAdapter.addRecord(record);
-                               recordsFragment.recordsAdapter.notifyDataSetChanged();
                            }
                        });
 

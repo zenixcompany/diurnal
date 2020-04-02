@@ -1,5 +1,6 @@
 package com.example.calendar;
 
+import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -22,6 +23,8 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -35,6 +38,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import com.example.calendar.models.Photo;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -56,7 +60,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class RecordActivity extends AppCompatActivity implements View.OnClickListener{
+public class RecordActivity extends AppCompatActivity implements SelectPhotoDialog.OnPhotoSelectedListener , View.OnClickListener{
 
     private ImageView mIVpicture;//Зображення
 
@@ -72,8 +76,10 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
 
     private static final int REQUEST_CODE_PERMISSION_RECEIVE_CAMERA = 102;
     private static final int REQUEST_CODE_TAKE_PHOTO = 103;
-    static final int REQUEST_TAKE_PHOTO = 1;
-    static final int REQUEST_IMAGE_CAPTURE = 1;
+
+    public static final int REQUEST_PERMISSIONS = 299;
+    public static final int REQUEST_TAKE_PHOTO = 300;
+    public static final int REQUEST_CHOOSE_PHOTO = 301;
 
     public Task<Uri> getStorageReference;
 
@@ -104,7 +110,9 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
     private String title;
     private String record;
     private String recordId;
-    private String recordPosition;
+    private int recordPosition;
+
+    private PhotosAdapter photosAdapter;
 
     String currentPhotoPath;
 
@@ -121,6 +129,7 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
 
         titleView = findViewById(R.id.recordActivity_title);
         recordView = findViewById(R.id.recordActivity_text);
+        RecyclerView photosRecycler = findViewById(R.id.recordActivity_photos_recycler);
 
         intent = getIntent();
         if (intent.getExtras() != null) {
@@ -131,7 +140,7 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
             else if (actionStr.contentEquals(EDIT_NOTE)) {
                 action = true;
                 recordId = getIntent().getStringExtra(NOTE_ID);
-                recordPosition = getIntent().getStringExtra(NOTE_POSITION);
+                recordPosition = getIntent().getExtras().getInt(NOTE_POSITION);
 
                 titleView.setText(intent.getStringExtra(TITLE));
                 recordView.setText(intent.getStringExtra(RECORD));
@@ -150,29 +159,54 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
         title = titleView.getText().toString();
         record = recordView.getText().toString();
 
+        ArrayList<Photo> photos = new ArrayList<>();
+
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+
+        photosAdapter = new PhotosAdapter(this, photos);
+        photosAdapter.setListener(position -> {
+            if (position == 0) {
+                SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
+                selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+            }
+        });
+        photosRecycler.setAdapter(photosAdapter);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        photosRecycler.setLayoutManager(layoutManager);
+
         //Зображення і кнопка
-        mIVpicture = (ImageView) findViewById(R.id.iv_piture);
-        mBTNaddPicture = (Button) findViewById(R.id.btn_add_picture);
+//        mIVpicture = (ImageView) findViewById(R.id.iv_piture);
+//        mBTNaddPicture = (Button) findViewById(R.id.btn_add_picture);
         //Для кнопки
-        mBTNaddPicture.setOnClickListener(this);
-
-        File localFile = null;
-
-        mRereference = getIntent().getStringExtra("Reference");//ключ
-        mStorageRef = FirebaseStorage.getInstance().getReference();
-
-        try {
-            localFile = createTempImageFile(getExternalCacheDir());
-            final File finalLocalFile = localFile;
-
-            mStorageRef.child("images/" + mRereference).getFile(localFile)
-                    .addOnSuccessListener((OnSuccessListener<FileDownloadTask.TaskSnapshot>) taskSnapshot -> Picasso.with(getBaseContext())
-                            .load(Uri.fromFile(finalLocalFile))
-                            .into(mIVpicture)).addOnFailureListener((OnFailureListener) e -> Log.i("Load","" + e));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        mBTNaddPicture.setOnClickListener(this);
+//
+//        File localFile = null;
+//
+//        mRereference = getIntent().getStringExtra("Reference");//ключ
+//        mStorageRef = FirebaseStorage.getInstance().getReference();
+//
+//        try {
+//            localFile = createTempImageFile(getExternalCacheDir());
+//            final File finalLocalFile = localFile;
+//
+//            mStorageRef.child("images/" + mRereference).getFile(localFile)
+//                    .addOnSuccessListener((OnSuccessListener<FileDownloadTask.TaskSnapshot>) taskSnapshot -> Picasso.with(getBaseContext())
+//                            .load(Uri.fromFile(finalLocalFile))
+//                            .into(mIVpicture)).addOnFailureListener((OnFailureListener) e -> Log.i("Load","" + e));
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         Toolbar toolbar = findViewById(R.id.recordActivity_toolbar);
         setSupportActionBar(toolbar);
@@ -247,6 +281,39 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void getImagePath(Uri imagePath) {
+        Photo photo = new Photo(createTempImageFile(), mImageUri);
+        photosAdapter.addPhoto(photo);
+    }
+
+    @Override
+    public void getImageBitmap(Bitmap bitmap) {
+
+    }
+
+    private void verifyPermissions() {
+         String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE,
+                                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                 Manifest.permission.CAMERA};
+
+         if (ContextCompat.checkSelfPermission(getApplicationContext(),
+                         permissions[0]) == PackageManager.PERMISSION_GRANTED &&
+                 ContextCompat.checkSelfPermission(getApplicationContext(),
+                         permissions[1]) == PackageManager.PERMISSION_GRANTED &&
+                 ContextCompat.checkSelfPermission(getApplicationContext(),
+                         permissions[2]) == PackageManager.PERMISSION_GRANTED) {
+
+         } else {
+             ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSIONS);
+         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        verifyPermissions();
+    }
+
     private boolean checkChanges() {
         // true if changes exist
         return !title.contentEquals(titleView.getText().toString()) ||
@@ -269,13 +336,13 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     //Створює фото за унікальним ім'ям по даті і часу
-    private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile();
-    }
+//    private File createImageF() throws IOException {
+//        // Create an image file name
+//        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+//        String imageFileName = "JPEG_" + timeStamp + "_";
+//        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+////        File image = File.createTempFile();
+//    }
     //додає фото в галерею
     private void galleryAddPic() {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
@@ -286,74 +353,70 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     //Метод для добавления фото
-    private void addPhoto() {
+//    private void addPhoto() {
+//
+//        //Проверяем разрешение на работу с камерой
+//        boolean isCameraPermissionGranted = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+//        //Проверяем разрешение на работу с внешнем хранилещем телефона
+//        boolean isWritePermissionGranted = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+//
+//        //Если разрешения != true
+//        if(!isCameraPermissionGranted || !isWritePermissionGranted) {
+//
+//            String[] permissions;//Разрешения которые хотим запросить у пользователя
+//
+//            if (!isCameraPermissionGranted && !isWritePermissionGranted) {
+//                permissions = new String[] {android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
+//            } else if (!isCameraPermissionGranted) {
+//                permissions = new String[] {android.Manifest.permission.CAMERA};
+//            } else {
+//                permissions = new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
+//            }
+//            //Запрашиваем разрешения у пользователя
+//            ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_PERMISSION_RECEIVE_CAMERA);
+//        } else {
+//            //Если все разрешения получены
+//            try {
+//                mTempPhoto = createTempImageFile(getExternalCacheDir());
+//                mImageUri = mTempPhoto.getAbsolutePath();
+//
+//                //Создаём лист с интентами для работы с изображениями
+//                List<Intent> intentList = new ArrayList<>();
+//                Intent chooserIntent = null;
+//
+//
+//                Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+//                Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//
+//                takePhotoIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(mTempPhoto));
+//
+//                intentList = addIntentsToList(this, intentList, pickIntent);
+//                intentList = addIntentsToList(this, intentList, takePhotoIntent);
+//
+//                if (!intentList.isEmpty()) {
+//                    chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1),"Choose your image source");
+//                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toArray(new Parcelable[]{}));
+//                }
+//
+//                /*После того как пользователь закончит работу с приложеним(которое работает с изображениями)
+//                 будет вызван метод onActivityResult
+//                */
+//                startActivityForResult(chooserIntent, REQUEST_CODE_TAKE_PHOTO);
+//            } catch (IOException e) {
+//                Log.e("ERROR", e.getMessage(), e);
+//            }
+//        }
+//    }
 
-        //Проверяем разрешение на работу с камерой
-        boolean isCameraPermissionGranted = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
-        //Проверяем разрешение на работу с внешнем хранилещем телефона
-        boolean isWritePermissionGranted = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-
-        //Если разрешения != true
-        if(!isCameraPermissionGranted || !isWritePermissionGranted) {
-
-            String[] permissions;//Разрешения которые хотим запросить у пользователя
-
-            if (!isCameraPermissionGranted && !isWritePermissionGranted) {
-                permissions = new String[] {android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
-            } else if (!isCameraPermissionGranted) {
-                permissions = new String[] {android.Manifest.permission.CAMERA};
-            } else {
-                permissions = new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
-            }
-            //Запрашиваем разрешения у пользователя
-            ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_PERMISSION_RECEIVE_CAMERA);
-        } else {
-            //Если все разрешения получены
-            try {
-                mTempPhoto = createTempImageFile(getExternalCacheDir());
-                mImageUri = mTempPhoto.getAbsolutePath();
-
-                //Создаём лист с интентами для работы с изображениями
-                List<Intent> intentList = new ArrayList<>();
-                Intent chooserIntent = null;
-
-
-                Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-                takePhotoIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(mTempPhoto));
-
-                intentList = addIntentsToList(this, intentList, pickIntent);
-                intentList = addIntentsToList(this, intentList, takePhotoIntent);
-
-                if (!intentList.isEmpty()) {
-                    chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1),"Choose your image source");
-                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toArray(new Parcelable[]{}));
-                }
-
-                /*После того как пользователь закончит работу с приложеним(которое работает с изображениями)
-                 будет вызван метод onActivityResult
-                */
-                startActivityForResult(chooserIntent, REQUEST_CODE_TAKE_PHOTO);
-            } catch (IOException e) {
-                Log.e("ERROR", e.getMessage(), e);
-            }
-        }
-    }
-
-    public static File createTempImageFile(File storageDir) throws IOException {
+    public String createTempImageFile() {
 
         // Генерируем имя файла
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());//получаем время
         String imageFileName = "photo_" + timeStamp;//состовляем имя файла
 
         //Создаём файл
-        return File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
+        return imageFileName + ".jpg";
     }
 
     /*
@@ -373,9 +436,9 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
     //R.id.btn_add_picture - id натиснотої кнопки додати зображення
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.btn_add_picture){
-            addPhoto();
-        }
+//        if(v.getId() == R.id.btn_add_picture){
+//            addPhoto();
+//        }
     }
 
     @Override
@@ -425,8 +488,8 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
             }
         }).addOnSuccessListener(taskSnapshot -> {
             getStorageReference = mStorageReference.getDownloadUrl();
-            Uri donwoldUri = taskSnapshot.getMetadata().getDownloadUrl();
-            Log.i("Load" , "Uri donwlod" + donwoldUri);
+////            Uri donwoldUri = taskSnapshot.getMetadata().getDownloadUrl();
+//            Log.i("Load" , "Uri donwlod" + donwoldUri);
         });
     }
 }

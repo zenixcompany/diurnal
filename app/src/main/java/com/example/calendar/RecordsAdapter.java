@@ -94,6 +94,8 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     public void addRecord(Record record) {
         // TODO Try to make this shit filtered explicitly by RecyclerView filter
         recordList.add(0, record);
+
+        notifyDataSetChanged();
     }
 
     public void updateRecord(int position, Record record) {

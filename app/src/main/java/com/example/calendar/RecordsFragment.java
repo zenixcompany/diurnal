@@ -92,9 +92,11 @@ public class RecordsFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == MainActivity.EDIT_NOTE) {
-            String noteId = data.getStringExtra(RecordActivity.NOTE_ID);
-            int position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
+            String noteId;
+            int position;
             if (resultCode == Activity.RESULT_OK) {
+                noteId = data.getStringExtra(RecordActivity.NOTE_ID);
+                position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
                 String title = data.getStringExtra(RecordActivity.TITLE);
                 String recordText = data.getStringExtra(RecordActivity.RECORD);
 
@@ -116,6 +118,8 @@ public class RecordsFragment extends Fragment {
                    }
                 });
             } else if (resultCode == MainActivity.DELETE_NOTE) {
+                noteId = data.getStringExtra(RecordActivity.NOTE_ID);
+                position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
                 Log.v(MainActivity.TAG, "DAMN, this shit works!");
 
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
