@@ -221,5 +221,4 @@ public class RecordActivity extends AppCompatActivity {
         Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath, bmOptions);
         imageView.setImageBitmap(bitmap);
     }
-
 }
