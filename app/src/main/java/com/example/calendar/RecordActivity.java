@@ -45,13 +45,19 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
 
     private Button mBTNaddPicture;//Кнопка додати фото
 
-    private File mTempPhoto;
+    private File mTempPhoto;//файл для збереження фото з камери
 
-    private String mImageUri = "";
+    private String mImageUri = "";// Uri файлу
 
-    private String mRereference = "";
+    private String mRereference = "";//Ключ з списку
+
+    private Uri ImageUri;
 
     private StorageReference mStorageRef;
+
+    private String downloadUrl;
+
+    private static String myTempFileName;
 
     private static final int REQUEST_CODE_PERMISSION_RECEIVE_CAMERA = 102;
     private static final int REQUEST_CODE_TAKE_PHOTO = 103;
@@ -68,11 +74,10 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
     public static final String RECORD = "RECORD";
 
 
-
     // false - CREATE_NOTE, true - EDIT_NOTE
     private boolean action = false;
 
-    private StorageReference mStorageReference;
+    //private StorageReference mStorageReference;// my func
 
     private Intent intent;
 
@@ -85,16 +90,19 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
 
     String currentPhotoPath;
 
+    /* my func
     public Task<Uri> getStorageReferenceFunction(){
         return getStorageReference = mStorageReference.getDownloadUrl();
     }
 
+
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record);
 
-        mStorageReference = FirebaseStorage.getInstance().getReference();
+        //mStorageReference = FirebaseStorage.getInstance().getReference();//my func
 
         titleView = findViewById(R.id.recordActivity_title);
         recordView = findViewById(R.id.recordActivity_text);
@@ -111,7 +119,7 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
         File localFile = null;
 
         mRereference = getIntent().getStringExtra("Reference");//ключ
-        mStorageRef = FirebaseStorage.getInstance().getReference();
+        mStorageRef = FirebaseStorage.getInstance().getReference();//силка на файлове сховище Firebase
 
         try {
             localFile = createTempImageFile(getExternalCacheDir());
@@ -242,7 +250,7 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
         // Генерируем имя файла
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());//получаем время
         String imageFileName = "photo_" + timeStamp;//состовляем имя файла
-
+        myTempFileName =  "photo_" + timeStamp;
         //Создаём файл
         return File.createTempFile(
                 imageFileName,  /* prefix */
@@ -281,7 +289,7 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
                 if(resultCode == RESULT_OK) {
                     if (data != null && data.getData() != null) {
                         mImageUri = getRealPathFromURI(data.getData());
-
+                        ImageUri = data.getData();
                         Picasso.with(getBaseContext())
                                 .load(data.getData())
                                 .into(mIVpicture);
@@ -310,18 +318,20 @@ public class RecordActivity extends AppCompatActivity implements View.OnClickLis
         return cursor.getString(columnIndex);
     }
 
+    final StorageReference filePath = mStorageRef.child(ImageUri.getLastPathSegment() + myTempFileName + ".jpg");
+
     public void uploadFileInFireBaseStorage (Uri uri){
         UploadTask uploadTask = mStorageRef.child("images/" + mRereference).putFile(uri);
-        uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                double progress = (100.0 * taskSnapshot.getBytesTransferred());
-                Log.i("Load","Upload is " + progress + "% done");
-            }
+        uploadTask.addOnProgressListener(taskSnapshot -> {
+            double progress = (100.0 * taskSnapshot.getBytesTransferred());
+            Log.i("Load","Upload is " + progress + "% done");
         }).addOnSuccessListener(taskSnapshot -> {
-            getStorageReference = mStorageReference.getDownloadUrl();
-            Uri donwoldUri = taskSnapshot.getMetadata().getDownloadUrl();
-            Log.i("Load" , "Uri donwlod" + donwoldUri);
+//            getStorageReference = mStorageReference.getDownloadUrl();
+           downloadUrl = filePath.getDownloadUrl().toString();
+            /*
+            Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
+            Log.i("Load" , "Uri download" + downloadUrl);
+             */
         });
     }
 }

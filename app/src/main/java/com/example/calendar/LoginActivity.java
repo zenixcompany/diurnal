@@ -128,6 +128,29 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
+    /*
+                @Override
+            protected void populateViewHolder(TaskViewHolder viewHolder, String title,final int position) {
+
+                viewHolder.mTitleTask.setText(title);
+                viewHolder.mDel.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        DatabaseReference itemRef = getRef(position);
+                        itemRef.removeValue();
+                    }
+                });
+                viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(ListTasks.this,DeatailTaskActivity.class);
+                        intent.putExtra("Reference",getRef(position).getKey().toString());
+                        startActivity(intent);
+                    }
+                });
+            }
+     */
+
 }
 
 
