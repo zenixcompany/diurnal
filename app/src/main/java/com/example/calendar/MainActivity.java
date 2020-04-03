@@ -20,7 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
@@ -29,7 +29,9 @@ public class MainActivity extends AppCompatActivity {
     public static final String USER_EMAIL = "USER_EMAIL";
     public static final String USER_NAME = "USER_NAME";
 
-    private static int NEW_NOTE = 556;
+    public static int NEW_NOTE = 556;
+    public static int EDIT_NOTE = 557;
+    public static int DELETE_NOTE = 558;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         if (requestCode == NEW_NOTE) {
             if (resultCode == RESULT_OK) {
                 Log.v(TAG, data.getStringExtra(RecordActivity.TITLE));
@@ -70,17 +73,23 @@ public class MainActivity extends AppCompatActivity {
                 record.setText(data.getStringExtra(RecordActivity.RECORD));
                 record.setNote_id(newRecordRef.getId());
                 record.setUser_id(user_id);
-                record.setDate(Calendar.getInstance().getTime());
 
                 newRecordRef.set(record).addOnCompleteListener(task -> {
                    if (task.isSuccessful()) {
-                       Log.v(TAG, "Okay, cool.");
-                       RecordsFragment recordsFragment = (RecordsFragment)
-                               getSupportFragmentManager().findFragmentById(R.id.fragment_records);
+                       Log.v(TAG, "Say me this shit");
+                       newRecordRef.get().addOnCompleteListener(task1 -> {
+                           Date date = task1.getResult().getDate("date");
+                           Log.v(TAG, date.toString());
+                           record.setDate(date);
 
-                       if (recordsFragment != null && recordsFragment.isAdded()) {
-                           recordsFragment.getNotes();
-                       }
+                           Log.v(TAG, "Okay, cool.");
+                           RecordsFragment recordsFragment = (RecordsFragment)
+                                   getSupportFragmentManager().findFragmentById(R.id.fragment_records);
+
+                           if (recordsFragment != null && recordsFragment.isAdded()) {
+                               recordsFragment.recordsAdapter.addRecord(record);
+                           }
+                       });
 
                    } else {
                         Log.v(TAG, "Some shit happened");
