@@ -113,8 +113,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     private int recordPosition;
 
     private PhotosAdapter photosAdapter;
-
-    String currentPhotoPath;
+    private SelectPhotoDialog selectPhotoDialog;
 
     public Task<Uri> getStorageReferenceFunction(){
         return getStorageReference = mStorageReference.getDownloadUrl();
@@ -175,6 +174,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         photosAdapter = new PhotosAdapter(this, photos);
         photosAdapter.setListener(position -> {
             if (position == 0) {
+                verifyPermissions();
                 SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
                 selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
             }
@@ -283,7 +283,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     @Override
     public void getImagePath(Uri imagePath) {
-        Photo photo = new Photo(createTempImageFile(), mImageUri);
+        Photo photo = new Photo(selectPhotoDialog.createImageName(), imagePath.toString());
+        Log.v(MainActivity.TAG, imagePath.toString());
         photosAdapter.addPhoto(photo);
     }
 
@@ -334,90 +335,14 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
         deleteDialog.create().show();
     }
-
-    //Створює фото за унікальним ім'ям по даті і часу
-//    private File createImageF() throws IOException {
-//        // Create an image file name
-//        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-//        String imageFileName = "JPEG_" + timeStamp + "_";
-//        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-////        File image = File.createTempFile();
+//    //додає фото в галерею
+//    private void galleryAddPic() {
+//        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+//        File f = new File(currentPhotoPath);
+//        Uri contentUri = Uri.fromFile(f);
+//        mediaScanIntent.setData(contentUri);
+//        this.sendBroadcast(mediaScanIntent);
 //    }
-    //додає фото в галерею
-    private void galleryAddPic() {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        File f = new File(currentPhotoPath);
-        Uri contentUri = Uri.fromFile(f);
-        mediaScanIntent.setData(contentUri);
-        this.sendBroadcast(mediaScanIntent);
-    }
-
-    //Метод для добавления фото
-//    private void addPhoto() {
-//
-//        //Проверяем разрешение на работу с камерой
-//        boolean isCameraPermissionGranted = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
-//        //Проверяем разрешение на работу с внешнем хранилещем телефона
-//        boolean isWritePermissionGranted = ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-//
-//        //Если разрешения != true
-//        if(!isCameraPermissionGranted || !isWritePermissionGranted) {
-//
-//            String[] permissions;//Разрешения которые хотим запросить у пользователя
-//
-//            if (!isCameraPermissionGranted && !isWritePermissionGranted) {
-//                permissions = new String[] {android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
-//            } else if (!isCameraPermissionGranted) {
-//                permissions = new String[] {android.Manifest.permission.CAMERA};
-//            } else {
-//                permissions = new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
-//            }
-//            //Запрашиваем разрешения у пользователя
-//            ActivityCompat.requestPermissions(this, permissions, REQUEST_CODE_PERMISSION_RECEIVE_CAMERA);
-//        } else {
-//            //Если все разрешения получены
-//            try {
-//                mTempPhoto = createTempImageFile(getExternalCacheDir());
-//                mImageUri = mTempPhoto.getAbsolutePath();
-//
-//                //Создаём лист с интентами для работы с изображениями
-//                List<Intent> intentList = new ArrayList<>();
-//                Intent chooserIntent = null;
-//
-//
-//                Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-//                Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//
-//                takePhotoIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-//                takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(mTempPhoto));
-//
-//                intentList = addIntentsToList(this, intentList, pickIntent);
-//                intentList = addIntentsToList(this, intentList, takePhotoIntent);
-//
-//                if (!intentList.isEmpty()) {
-//                    chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1),"Choose your image source");
-//                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toArray(new Parcelable[]{}));
-//                }
-//
-//                /*После того как пользователь закончит работу с приложеним(которое работает с изображениями)
-//                 будет вызван метод onActivityResult
-//                */
-//                startActivityForResult(chooserIntent, REQUEST_CODE_TAKE_PHOTO);
-//            } catch (IOException e) {
-//                Log.e("ERROR", e.getMessage(), e);
-//            }
-//        }
-//    }
-
-    public String createTempImageFile() {
-
-        // Генерируем имя файла
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());//получаем время
-        String imageFileName = "photo_" + timeStamp;//состовляем имя файла
-
-        //Создаём файл
-        return imageFileName + ".jpg";
-    }
 
     /*
     Метод для добавления интента в лист интентов

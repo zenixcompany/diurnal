@@ -71,6 +71,7 @@ public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder
             image.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.ic_add_a_photo_black_24dp, null));
         }
         else{
+            Log.v(MainActivity.TAG, photos.get(position).getPhotoUrl());
             Picasso.with(context).load(photos.get(position).getPhotoUrl()).into(image);
         }
 
