@@ -19,6 +19,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 
 import java.util.Date;
 import java.util.Objects;
@@ -28,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String USER_EMAIL = "USER_EMAIL";
     public static final String USER_NAME = "USER_NAME";
+
+    private Button actionMonth;
 
     public static int NEW_NOTE = 556;
     public static int EDIT_NOTE = 557;
@@ -48,6 +51,13 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra(RecordActivity.ACTION, RecordActivity.CREATE_NOTE);
             startActivityForResult(intent, NEW_NOTE);
         });
+
+        actionMonth = (Button)findViewById(R.id.action_month);
+        actionMonth.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, CalendarFragment.class);
+            startActivity(intent);
+        });
+
     }
 
     @Override

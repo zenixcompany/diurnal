@@ -1,24 +1,45 @@
 package com.example.calendar;
 
-import android.os.Bundle;
-import android.widget.CalendarView;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.DialogFragment;
 
-public class CalendarFragment extends AppCompatActivity {
+import android.app.DatePickerDialog;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.TextView;
+
+import java.text.DateFormat;
+import java.util.Calendar;
+
+
+public class CalendarFragment extends AppCompatActivity implements DatePickerDialog.OnDateSetListener{
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_calendar);
 
-        CalendarView calendarView = (CalendarView) findViewById(R.id.calendarView);
-        calendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
+        Button button = (Button)findViewById(R.id.calendarActivity_button);
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onSelectedDayChange(@NonNull CalendarView view, int year, int month, int dayOfMonth) {
-
+            public void onClick(View v) {
+                DialogFragment datePicker = new DatePickerFragment();
+                datePicker.show(getSupportFragmentManager(), "date picker");
             }
         });
+    }
+
+    @Override
+    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+        calendar.set(Calendar.MONTH, month);
+        calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+        String currentDateString = DateFormat.getDateInstance().format(calendar.getTime());
+
+        TextView textView = (TextView) findViewById(R.id.textView);
+        textView.setText(currentDateString);
     }
 }
