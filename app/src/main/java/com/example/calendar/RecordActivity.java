@@ -87,12 +87,12 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     private EditText titleView;
     private EditText recordView;
-    private Menu menu;
 
     private String title;
     private String record;
     private String recordId;
     private int recordPosition;
+    private ArrayList<String> photosUri;
 
     private PhotosAdapter photosAdapter;
 
@@ -113,8 +113,10 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             String actionStr = intent.getExtras().getString(ACTION);
             if (actionStr.contentEquals(CREATE_NOTE)) {
                 action = false;
+
             } else if (actionStr.contentEquals(EDIT_NOTE)) {
                 action = true;
+
                 recordId = getIntent().getStringExtra(NOTE_ID);
                 recordPosition = getIntent().getExtras().getInt(NOTE_POSITION);
 
@@ -127,6 +129,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                 recordView.setOnKeyListener((view, i, keyEvent) -> true);
                 recordView.setSingleLine(false);
                 isEditing = false;
+
+                photosUri = getIntent().getStringArrayListExtra(PHOTOS);
             }
         }
 
@@ -137,22 +141,32 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
         ArrayList<Photo> photos = new ArrayList<>();
 
-        photos.add(new Photo("Add a photo", "photo"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-
-
-        photosAdapter = new PhotosAdapter(this, photos);
-        photosAdapter.setListener(position -> {
-            if (position == 0) {
-                verifyPermissions();
-                SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
-                selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+        if (action) {
+            photos.add(new Photo("Add a photo", "photo"));
+            if (photosUri != null) {
+                for (String photoUri : photosUri) {
+                    photos.add(new Photo("dipa", photoUri));
+                }
             }
-        });
-        photosRecycler.setAdapter(photosAdapter);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-        photosRecycler.setLayoutManager(layoutManager);
+
+            photosAdapter = new PhotosAdapter(this, photos);
+            photosAdapter.setListener(position -> {
+                if (position == 0) {
+                    verifyPermissions();
+                    SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
+                    selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                }
+            });
+            photosRecycler.setAdapter(photosAdapter);
+
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+            photosRecycler.setLayoutManager(layoutManager);
+
+            db = FirebaseFirestore.getInstance();
+            recordsRef = db.collection("records");
+        }
+
 
         Toolbar toolbar = findViewById(R.id.recordActivity_toolbar);
         setSupportActionBar(toolbar);
@@ -161,10 +175,6 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
         }
-
-        db = FirebaseFirestore.getInstance();
-        recordsRef = db.collection("records");
-
     }
 
     @Override
@@ -188,9 +198,13 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_record, menu);
-        this.menu = menu;
-        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
-        menu.getItem(1).setIcon(drawable);
+        if (action) {
+            Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
+            menu.getItem(1).setIcon(drawable);
+        } else {
+            menu.getItem(0).setVisible(false);
+            menu.getItem(1).setVisible(false);
+        }
 
         return true;
     }

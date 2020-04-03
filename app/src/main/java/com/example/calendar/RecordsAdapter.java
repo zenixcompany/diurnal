@@ -1,9 +1,10 @@
 package com.example.calendar;
 
 import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import com.example.calendar.models.Record;
@@ -18,14 +19,48 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHolder> {
-    private ArrayList<Record> recordList;
+public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHolder>
+            implements Filterable {
+    public ArrayList<Record> recordList;
+    private ArrayList<Record> recordListForFilter;
 
     private HashMap<String, Integer> dayNamesColors;
 
     private RecordsListener listener;
 
     private Calendar calendar = Calendar.getInstance();
+
+    private Filter recordsFilter = new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence charSequence) {
+            ArrayList<Record> recordListFiltered = new ArrayList<>();
+
+            if (charSequence == null || charSequence.length() == 0) {
+                recordListFiltered.addAll(recordListForFilter);
+            } else {
+                // trim deletes empty spaces
+                String filterPattern = charSequence.toString().toLowerCase().trim();
+
+                for (Record record : recordListForFilter) {
+                    if (record.getTitle().toLowerCase().contains(filterPattern)) {
+                        recordListFiltered.add(record);
+                    }
+                }
+            }
+            FilterResults results = new FilterResults();
+            results.values = recordListFiltered;
+
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+            recordList.clear();
+            recordList.addAll((ArrayList)filterResults.values);
+
+            notifyDataSetChanged();
+        }
+    };
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private CardView cardView;
@@ -38,6 +73,7 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
     public RecordsAdapter(ArrayList<Record> recordList) {
         this.recordList = recordList;
+        recordListForFilter = new ArrayList<>(this.recordList);
         initColors();
     }
 
@@ -92,9 +128,15 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         return recordList.size();
     }
 
+    @Override
+    public Filter getFilter() {
+        return recordsFilter;
+    }
+
     public void addRecord(Record record) {
         // TODO Try to make this shit filtered explicitly by RecyclerView filter
         recordList.add(0, record);
+        recordListForFilter.add(0, record);
 
         notifyDataSetChanged();
     }
@@ -108,11 +150,17 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         recordList.add(0, toDelete);
 
+        recordListForFilter.get(position).setTitle(record.getTitle());
+        recordListForFilter.get(position).setTitle(record.getText());
+        recordListForFilter.remove(position);
+        recordListForFilter.add(0, toDelete);
+
         notifyDataSetChanged();
     }
 
     public void deleteRecord(int position) {
         recordList.remove(position);
+        recordListForFilter.remove(position);
 
         notifyDataSetChanged();
     }

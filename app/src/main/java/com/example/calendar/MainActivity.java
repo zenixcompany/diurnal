@@ -14,13 +14,14 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Objects;
 
@@ -30,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String USER_EMAIL = "USER_EMAIL";
     public static final String USER_NAME = "USER_NAME";
 
-    private Button actionMonth;
+    private boolean month = false;
 
     public static int NEW_NOTE = 556;
     public static int EDIT_NOTE = 557;
@@ -39,6 +40,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment());
+        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        fragmentTransaction.commit();
 
         setContentView(R.layout.activity_main);
 
@@ -51,18 +57,6 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra(RecordActivity.ACTION, RecordActivity.CREATE_NOTE);
             startActivityForResult(intent, NEW_NOTE);
         });
-
-        actionMonth = (Button)findViewById(R.id.action_month);
-        actionMonth.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, CalendarFragment.class);
-            startActivity(intent);
-        });
-
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
     }
 
     @Override
@@ -118,6 +112,24 @@ public class MainActivity extends AppCompatActivity {
         SearchView searchView = (SearchView) searchItem.getActionView();
         searchView.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                RecordsFragment recordsFragment = (RecordsFragment)
+                        getSupportFragmentManager().findFragmentById(R.id.fragment_records);
+
+                if (recordsFragment != null && recordsFragment.isAdded()) {
+                    recordsFragment.recordsAdapter.getFilter().filter(newText);
+                }
+                return false;
+            }
+        });
+
         return true;
     }
 
@@ -125,13 +137,32 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
             case R.id.action_month:
-
+                changeFragments(month);
                 break;
             case R.id.action_sign_out:
                 signIn();
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void changeFragments(boolean isMonth) {
+        if (isMonth) {
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment());
+            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+            fragmentTransaction.commit();
+
+            month = false;
+        } else {
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            CalendarFragment calendarFragment = new CalendarFragment();
+            ft.replace(R.id.fragment_records, calendarFragment);
+            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+            ft.commit();
+
+            month = true;
+        }
     }
 
     private void signIn() {

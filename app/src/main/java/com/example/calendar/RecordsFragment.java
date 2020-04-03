@@ -38,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
  * A simple {@link Fragment} subclass.
  */
 public class RecordsFragment extends Fragment {
+    public RecyclerView recordsRecycler;
 
     private ArrayList<Record> recordsList;
     public RecordsAdapter recordsAdapter;
@@ -56,10 +57,9 @@ public class RecordsFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view =  inflater.inflate(R.layout.fragment_records, container, false);
 
-        RecyclerView recordsRecycler = view.findViewById(R.id.records_recycler);
+        recordsRecycler = view.findViewById(R.id.records_recycler);
 
         recordsList = new ArrayList<>();
-
         recordsAdapter = new RecordsAdapter(recordsList);
         recordsAdapter.setListener(position -> {
             Intent intent = new Intent(getActivity(), RecordActivity.class);
@@ -78,9 +78,7 @@ public class RecordsFragment extends Fragment {
         LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
         recordsRecycler.setLayoutManager(layoutManager);
 
-
         getNotes();
-
         return view;
     }
 
@@ -140,12 +138,12 @@ public class RecordsFragment extends Fragment {
         if (lastQueriedDocument != null) {
             recordsQuery = collectionReference.whereEqualTo("user_id",
                     Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
-                    .orderBy("date", Query.Direction.DESCENDING)
+                    .orderBy("date", Query.Direction.ASCENDING)
                     .startAfter(lastQueriedDocument);
         } else {
             recordsQuery = collectionReference.whereEqualTo("user_id",
                     Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
-                    .orderBy("date", Query.Direction.DESCENDING);
+                    .orderBy("date", Query.Direction.ASCENDING);
         }
 
         recordsQuery.get().addOnCompleteListener(task -> {
@@ -154,7 +152,7 @@ public class RecordsFragment extends Fragment {
 
                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                    Record record = documentSnapshot.toObject(Record.class);
-                   recordsList.add(record);
+                   recordsAdapter.addRecord(record);
                }
 
                if (task.getResult().size() != 0) {

@@ -33,7 +33,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/recordActivity_title"
-        android:scrollbars="horizontal"
         android:layout_marginStart="@dimen/photoMargin"
         android:layout_marginEnd="@dimen/photoMargin"/>
 
