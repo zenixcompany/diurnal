@@ -43,7 +43,11 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
@@ -60,28 +64,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class RecordActivity extends AppCompatActivity implements SelectPhotoDialog.OnPhotoSelectedListener , View.OnClickListener{
-
-    private ImageView mIVpicture;//Зображення
-
-    private Button mBTNaddPicture;//Кнопка додати фото
-
-    private File mTempPhoto;
-
-    private String mImageUri = "";
-
-    private String mRereference = "";
-
-    private StorageReference mStorageRef;
-
-    private static final int REQUEST_CODE_PERMISSION_RECEIVE_CAMERA = 102;
-    private static final int REQUEST_CODE_TAKE_PHOTO = 103;
-
+public class RecordActivity extends AppCompatActivity implements SelectPhotoDialog.OnPhotoSelectedListener {
     public static final int REQUEST_PERMISSIONS = 299;
     public static final int REQUEST_TAKE_PHOTO = 300;
     public static final int REQUEST_CHOOSE_PHOTO = 301;
-
-    public Task<Uri> getStorageReference;
 
     public static final String ACTION = "ACTION";
     public static final String CREATE_NOTE = "CREATE_NOTE";
@@ -91,21 +77,17 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     public static final String RECORD = "RECORD";
     public static final String NOTE_ID = "NOTE_ID";
     public static final String NOTE_POSITION = "NOTE_POSITION";
-
-
+    public static final String PHOTOS = "PHOTOS";
 
     // false - CREATE_NOTE, true - EDIT_NOTE
     private boolean action = false;
     private boolean isEditing = false;
-
-    private StorageReference mStorageReference;
 
     private Intent intent;
 
     private EditText titleView;
     private EditText recordView;
     private Menu menu;
-    private ImageView imageView;//findViewById
 
     private String title;
     private String record;
@@ -113,18 +95,14 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     private int recordPosition;
 
     private PhotosAdapter photosAdapter;
-    private SelectPhotoDialog selectPhotoDialog;
 
-    public Task<Uri> getStorageReferenceFunction(){
-        return getStorageReference = mStorageReference.getDownloadUrl();
-    }
+    private FirebaseFirestore db;
+    private CollectionReference recordsRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record);
-
-        mStorageReference = FirebaseStorage.getInstance().getReference();
 
         titleView = findViewById(R.id.recordActivity_title);
         recordView = findViewById(R.id.recordActivity_text);
@@ -135,8 +113,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             String actionStr = intent.getExtras().getString(ACTION);
             if (actionStr.contentEquals(CREATE_NOTE)) {
                 action = false;
-            }
-            else if (actionStr.contentEquals(EDIT_NOTE)) {
+            } else if (actionStr.contentEquals(EDIT_NOTE)) {
                 action = true;
                 recordId = getIntent().getStringExtra(NOTE_ID);
                 recordPosition = getIntent().getExtras().getInt(NOTE_POSITION);
@@ -160,16 +137,9 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
         ArrayList<Photo> photos = new ArrayList<>();
 
+        photos.add(new Photo("Add a photo", "photo"));
         photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
-        photos.add(new Photo("Dipa", "https://sitechecker.pro/wp-content/uploads/2017/12/URL-meaning.png"));
+
 
         photosAdapter = new PhotosAdapter(this, photos);
         photosAdapter.setListener(position -> {
@@ -184,30 +154,6 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         photosRecycler.setLayoutManager(layoutManager);
 
-        //Зображення і кнопка
-//        mIVpicture = (ImageView) findViewById(R.id.iv_piture);
-//        mBTNaddPicture = (Button) findViewById(R.id.btn_add_picture);
-        //Для кнопки
-//        mBTNaddPicture.setOnClickListener(this);
-//
-//        File localFile = null;
-//
-//        mRereference = getIntent().getStringExtra("Reference");//ключ
-//        mStorageRef = FirebaseStorage.getInstance().getReference();
-//
-//        try {
-//            localFile = createTempImageFile(getExternalCacheDir());
-//            final File finalLocalFile = localFile;
-//
-//            mStorageRef.child("images/" + mRereference).getFile(localFile)
-//                    .addOnSuccessListener((OnSuccessListener<FileDownloadTask.TaskSnapshot>) taskSnapshot -> Picasso.with(getBaseContext())
-//                            .load(Uri.fromFile(finalLocalFile))
-//                            .into(mIVpicture)).addOnFailureListener((OnFailureListener) e -> Log.i("Load","" + e));
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
         Toolbar toolbar = findViewById(R.id.recordActivity_toolbar);
         setSupportActionBar(toolbar);
 
@@ -215,6 +161,9 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
         }
+
+        db = FirebaseFirestore.getInstance();
+        recordsRef = db.collection("records");
 
     }
 
@@ -264,7 +213,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                 } else {
                     titleView.setInputType(InputType.TYPE_CLASS_TEXT);
                     titleView.setOnKeyListener(null);
-                    recordView.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+                    recordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
                     recordView.setOnKeyListener(null);
 
                     Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
@@ -281,33 +230,50 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         return super.onOptionsItemSelected(item);
     }
 
+    public String createImageName() {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());//получаем время
+
+        return "photo_" + timeStamp;
+    }
+
     @Override
-    public void getImagePath(Uri imagePath) {
-        Photo photo = new Photo(selectPhotoDialog.createImageName(), imagePath.toString());
+    public void getChosenImage(Uri imagePath) {
+        String imageName = createImageName();
+
+        Photo photo = new Photo(imageName, imagePath.toString());
         Log.v(MainActivity.TAG, imagePath.toString());
+
+        saveImageToFirebase(imagePath, imageName);
+
         photosAdapter.addPhoto(photo);
     }
 
     @Override
-    public void getImageBitmap(Bitmap bitmap) {
+    public void getTakenImage(File image) {
+        Log.v(MainActivity.TAG, Uri.fromFile(image).toString());
 
+        String imageName = image.getName().substring(0, image.getName().lastIndexOf('.'));
+        Photo photo = new Photo(imageName, Uri.fromFile(image).toString());
+
+        saveImageToFirebase(Uri.fromFile(image), imageName);
+        photosAdapter.addPhoto(photo);
     }
 
     private void verifyPermissions() {
-         String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE,
-                                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                 Manifest.permission.CAMERA};
+        String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.CAMERA};
 
-         if (ContextCompat.checkSelfPermission(getApplicationContext(),
-                         permissions[0]) == PackageManager.PERMISSION_GRANTED &&
-                 ContextCompat.checkSelfPermission(getApplicationContext(),
-                         permissions[1]) == PackageManager.PERMISSION_GRANTED &&
-                 ContextCompat.checkSelfPermission(getApplicationContext(),
-                         permissions[2]) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(getApplicationContext(),
+                permissions[0]) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(getApplicationContext(),
+                        permissions[1]) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(getApplicationContext(),
+                        permissions[2]) == PackageManager.PERMISSION_GRANTED) {
 
-         } else {
-             ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSIONS);
-         }
+        } else {
+            ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSIONS);
+        }
     }
 
     @Override
@@ -331,165 +297,66 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             finish();
         });
 
-        deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> { });
+        deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
+        });
 
         deleteDialog.create().show();
     }
-//    //додає фото в галерею
-//    private void galleryAddPic() {
-//        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-//        File f = new File(currentPhotoPath);
-//        Uri contentUri = Uri.fromFile(f);
-//        mediaScanIntent.setData(contentUri);
-//        this.sendBroadcast(mediaScanIntent);
-//    }
 
-    /*
-    Метод для добавления интента в лист интентов
-    */
-    public static List<Intent> addIntentsToList(Context context, List<Intent> list, Intent intent) {
-        List<ResolveInfo> resInfo = context.getPackageManager().queryIntentActivities(intent, 0);
-        for (ResolveInfo resolveInfo : resInfo) {
-            String packageName = resolveInfo.activityInfo.packageName;
-            Intent targetedIntent = new Intent(intent);
-            targetedIntent.setPackage(packageName);
-            list.add(targetedIntent);
-        }
-        return list;
-    }
+    private void saveImageToFirebase(Uri photo, String photoName) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-    //R.id.btn_add_picture - id натиснотої кнопки додати зображення
-    @Override
-    public void onClick(View v) {
-//        if(v.getId() == R.id.btn_add_picture){
-//            addPhoto();
-//        }
-    }
+        String userID = user.getUid();
 
-    @Override
-    public void onActivityResult(int requestCode,int resultCode, Intent data){
-        super.onActivityResult(requestCode , resultCode , data);
-        switch (requestCode){
-            case REQUEST_CODE_TAKE_PHOTO:
-                if(resultCode == RESULT_OK) {
-                    if (data != null && data.getData() != null) {
-                        mImageUri = getRealPathFromURI(data.getData());
+        StorageReference storageReference = FirebaseStorage.getInstance().getReference().child("images/users/" + userID + "/" + photoName);
+        storageReference.putFile(photo).addOnSuccessListener(taskSnapshot -> {
+            Log.v(MainActivity.TAG, "Dopy");
 
-                        Picasso.with(getBaseContext())
-                                .load(data.getData())
-                                .into(mIVpicture);
-                        uploadFileInFireBaseStorage(data.getData());
-                    } else if (mImageUri != null) {
-                        mImageUri = Uri.fromFile(mTempPhoto).toString();
+            Task<Uri> result = taskSnapshot.getMetadata().getReference().getDownloadUrl();
+            result.addOnSuccessListener(uri -> {
+                Log.v(MainActivity.TAG, "Tell me this shit - " + uri.toString());
+                String photoUri = uri.toString();
+                recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                Log.v(MainActivity.TAG, "Photo URL was bound to record");
+                            } else {
+                                Log.v(MainActivity.TAG, "Photo URL binding error");
+                            }
+                        });
 
-                        Picasso.with(this)
-                                .load(mImageUri)
-                                .into(mIVpicture);
-                        uploadFileInFireBaseStorage(Uri.fromFile((mTempPhoto)));
-                    }
-                }
-                break;
-        }
-    }
+            });
 
-    //Получаем абсолютный путь файла из Uri
-    private String getRealPathFromURI(Uri uri) {
-        String[] projection = { MediaStore.Images.Media.DATA };
-        @SuppressWarnings("deprecation")
-        Cursor cursor = managedQuery(uri, projection, null, null, null);
-        int columnIndex = cursor
-                .getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-        cursor.moveToFirst();
-        return cursor.getString(columnIndex);
-    }
-
-    public void uploadFileInFireBaseStorage (Uri uri){
-        UploadTask uploadTask = mStorageRef.child("images/" + mRereference).putFile(uri);
-        uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                double progress = (100.0 * taskSnapshot.getBytesTransferred());
-                Log.i("Load","Upload is " + progress + "% done");
-            }
-        }).addOnSuccessListener(taskSnapshot -> {
-            getStorageReference = mStorageReference.getDownloadUrl();
-////            Uri donwoldUri = taskSnapshot.getMetadata().getDownloadUrl();
-//            Log.i("Load" , "Uri donwlod" + donwoldUri);
+        }).addOnFailureListener(e -> {
+            Log.v(MainActivity.TAG, "Shitty");
         });
     }
 }
-/*
-        intent = getIntent();
-        if (intent.getExtras() != null) {
-            String actionStr = intent.getExtras().getString(ACTION);
 
-            if (actionStr.contentEquals(CREATE_NOTE)) {
-                action = false;
-            }
-            else if (actionStr.contentEquals(EDIT_NOTE)) {
-                action = true;
-            }
-        }
-
-    //створює файл для фотографії
-    private void dispatchTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        // Ensure that there's a camera activity to handle the intent
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            // Create the File where the photo should go
-            File photoFile = null;
-            try {
-                photoFile = createImageFile();
-            } catch (IOException ex) {
-                // Error occurred while creating the File
-            }
-            // Continue only if the File was successfully created
-            if (photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(this,
-                        "com.example.calendar",
-                        photoFile);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
-            }
-        }
-    }
-
-        /*
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            imageView.setImageBitmap(imageBitmap);
-        }
-    }
 
     //незнаю чи то треба то для великих зображень
-    private void setPic() {
-        // Get the dimensions of the View
-        int targetW = imageView.getWidth();
-        int targetH = imageView.getHeight();
-
-        // Get the dimensions of the bitmap
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inJustDecodeBounds = true;
-
-        int photoW = bmOptions.outWidth;
-        int photoH = bmOptions.outHeight;
-
-        // Determine how much to scale down the image
-        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
-
-        // Decode the image file into a Bitmap sized to fill the View
-        bmOptions.inJustDecodeBounds = false;
-        bmOptions.inSampleSize = scaleFactor;
-        bmOptions.inPurgeable = true;
-
-        Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath, bmOptions);
-        imageView.setImageBitmap(bitmap);
-    }
-
- */
+//    private void setPic() {
+//        // Get the dimensions of the View
+//        int targetW = imageView.getWidth();
+//        int targetH = imageView.getHeight();
+//
+//        // Get the dimensions of the bitmap
+//        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+//        bmOptions.inJustDecodeBounds = true;
+//
+//        int photoW = bmOptions.outWidth;
+//        int photoH = bmOptions.outHeight;
+//
+//        // Determine how much to scale down the image
+//        int scaleFactor = Math.min(photoW / targetW, photoH / targetH);
+//
+//        // Decode the image file into a Bitmap sized to fill the View
+//        bmOptions.inJustDecodeBounds = false;
+//        bmOptions.inSampleSize = scaleFactor;
+//        bmOptions.inPurgeable = true;
+//
+//        Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath, bmOptions);
+//        imageView.setImageBitmap(bitmap);
+//    }
 
 

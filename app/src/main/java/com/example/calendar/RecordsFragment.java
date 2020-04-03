@@ -60,10 +60,6 @@ public class RecordsFragment extends Fragment {
 
         recordsList = new ArrayList<>();
 
-//        recordsList.add(new Record(Calendar.getInstance().getTime()));
-//        recordsList.add(new Record(Calendar.getInstance().getTime()));
-//        recordsList.add(new Record(Calendar.getInstance().getTime()));
-
         recordsAdapter = new RecordsAdapter(recordsList);
         recordsAdapter.setListener(position -> {
             Intent intent = new Intent(getActivity(), RecordActivity.class);
@@ -73,6 +69,7 @@ public class RecordsFragment extends Fragment {
             intent.putExtra(RecordActivity.NOTE_POSITION, position);
             intent.putExtra(RecordActivity.TITLE, recordsList.get(position).getTitle());
             intent.putExtra(RecordActivity.RECORD, recordsList.get(position).getText());
+            intent.putExtra(RecordActivity.PHOTOS, recordsList.get(position).getPhotos());
 
             startActivityForResult(intent, MainActivity.EDIT_NOTE);
         });

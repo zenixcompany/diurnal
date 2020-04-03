@@ -31,10 +31,11 @@ public class SelectPhotoDialog extends DialogFragment {
     OnPhotoSelectedListener photoSelectedListener;
 
     private String currentPhotoPath;
+    private File photoFile = null;
 
     public interface OnPhotoSelectedListener {
-        void getImagePath(Uri imagePath);
-        void getImageBitmap(Bitmap bitmap);
+        void getChosenImage(Uri imagePath);
+        void getTakenImage(File image);
     }
 
     @Nullable
@@ -53,7 +54,7 @@ public class SelectPhotoDialog extends DialogFragment {
         takePhoto.setOnClickListener(view1 -> {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             if (intent.resolveActivity(getContext().getPackageManager())  != null) {
-                File photoFile = null;
+                photoFile = null;
                 try {
                     photoFile = createImageFile();
                 } catch (IOException e) {
@@ -61,10 +62,10 @@ public class SelectPhotoDialog extends DialogFragment {
                 }
 
                 if (photoFile != null) {
-                    Uri photoUri = FileProvider.getUriForFile(getContext(),
-                            "com.example.calendar.fileprovider",
-                            photoFile);
-                    intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+//                    Uri photoUri = FileProvider.getUriForFile(getContext(),
+//                            "com.example.calendar.fileprovider",
+//                            photoFile);
+                    intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
                     startActivityForResult(intent, RecordActivity.REQUEST_TAKE_PHOTO);
                 }
             }
@@ -80,16 +81,24 @@ public class SelectPhotoDialog extends DialogFragment {
         if (requestCode == RecordActivity.REQUEST_CHOOSE_PHOTO && resultCode == Activity.RESULT_OK &&
                 data != null) {
             Uri selectedImageUri = data.getData();
-            photoSelectedListener.getImagePath(selectedImageUri);
+            photoSelectedListener.getChosenImage(selectedImageUri);
 
             getDialog().dismiss();
         }
-        else if (requestCode == RecordActivity.REQUEST_TAKE_PHOTO && resultCode == Activity.RESULT_OK &&
-                data != null) {
-            Bitmap bitmap = (Bitmap) data.getExtras().get("data");
-            photoSelectedListener.getImageBitmap(bitmap);
-
-            getDialog().dismiss();
+        else if (requestCode == RecordActivity.REQUEST_TAKE_PHOTO) {
+            if (resultCode == Activity.RESULT_OK) {
+                Log.v(MainActivity.TAG, "OK, COOOOL");
+                if (photoFile != null) {
+                    photoSelectedListener.getTakenImage(photoFile);
+                }
+                getDialog().dismiss();
+            } else {
+                Log.v(MainActivity.TAG, "NOOT!");
+                if (photoFile != null) {
+                    if (photoFile.delete())
+                        Log.v(MainActivity.TAG, "Canceled photo was deleted");
+                }
+            }
         }
     }
 
@@ -104,17 +113,11 @@ public class SelectPhotoDialog extends DialogFragment {
         super.onAttach(context);
     }
 
-    public String createImageName () {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());//получаем время
-
-        return "photo_" + timeStamp;
-    }
-
     public File createImageFile() throws IOException {
 
         File storageDir = getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
 
-        File image = File.createTempFile(createImageName(), ".jpg", storageDir);
+        File image = File.createTempFile(((RecordActivity) getActivity()).createImageName(), ".jpg", storageDir);
 
         currentPhotoPath = image.getAbsolutePath();
         Log.v(MainActivity.TAG, currentPhotoPath);

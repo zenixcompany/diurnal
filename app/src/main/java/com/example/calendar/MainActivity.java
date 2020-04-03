@@ -115,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
             case R.id.action_month:
+
                 break;
             case R.id.action_sign_out:
                 signIn();
