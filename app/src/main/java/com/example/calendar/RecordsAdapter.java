@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHolder> {
     private ArrayList<Record> recordList;
+
     private HashMap<String, Integer> dayNamesColors;
 
     private RecordsListener listener;
