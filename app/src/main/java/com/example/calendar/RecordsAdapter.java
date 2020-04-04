@@ -154,6 +154,8 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     public void updateRecord(int position, Record record) {
         recordList.get(position).setTitle(record.getTitle());
         recordList.get(position).setText(record.getText());
+        recordList.get(position).setDate(record.getDate());
+        recordList.get(position).setPhotos(record.getPhotos());
 
         Record toDelete = recordList.get(position);
         recordList.remove(position);
@@ -162,6 +164,8 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         recordListForFilter.get(position).setTitle(record.getTitle());
         recordListForFilter.get(position).setText(record.getText());
+        recordListForFilter.get(position).setDate(record.getDate());
+        recordListForFilter.get(position).setPhotos(record.getPhotos());
         recordListForFilter.remove(position);
         recordListForFilter.add(0, toDelete);
 

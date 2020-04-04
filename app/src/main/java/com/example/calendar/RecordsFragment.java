@@ -87,12 +87,13 @@ public class RecordsFragment extends Fragment {
                 position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
                 String title = data.getStringExtra(RecordActivity.TITLE);
                 String recordText = data.getStringExtra(RecordActivity.RECORD);
+                ArrayList<String> photoURIs = data.getStringArrayListExtra(RecordActivity.PHOTOS);
 
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
 
                 DocumentReference dR = db.collection("records").document(noteId);
-                dR.update("title", title, "text", recordText
-                , "date", FieldValue.serverTimestamp()).addOnCompleteListener(task -> {
+                dR.update("title", title, "text", recordText,
+                        "date", FieldValue.serverTimestamp()).addOnCompleteListener(task -> {
                    if (task.isSuccessful()) {
                        Log.v(MainActivity.TAG, "Note has been updated");
                        dR.get().addOnCompleteListener(task1 -> {
@@ -102,6 +103,7 @@ public class RecordsFragment extends Fragment {
                                record.setTitle(title);
                                record.setText(recordText);
                                record.setDate(date);
+                               record.setPhotos(photoURIs);
                                recordsAdapter.updateRecord(position, record);
                            }
                        });

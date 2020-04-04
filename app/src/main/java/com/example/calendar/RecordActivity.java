@@ -56,6 +56,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     // false - CREATE_NOTE, true - EDIT_NOTE
     private boolean action = false;
     private boolean isEditing = false;
+    private boolean isPhotoAdded = false;
 
     private Intent intent;
 
@@ -121,6 +122,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                 for (String photoUri : photosUri) {
                     photos.add(new Photo("dipa", photoUri));
                 }
+            } else {
+                photosUri = new ArrayList<>();
             }
 
 
@@ -156,6 +159,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         if (checkChanges()) {
             intent.putExtra(TITLE, titleView.getText().toString());
             intent.putExtra(RECORD, recordView.getText().toString());
+            intent.putExtra(PHOTOS, photosUri);
 
             setResult(RESULT_OK, intent);
         }
@@ -231,6 +235,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         Photo photo = new Photo(imageName, imagePath.toString());
         Log.v(MainActivity.TAG, imagePath.toString());
 
+        isPhotoAdded = true;
         saveImageToFirebase(imagePath, imageName);
 
         photosAdapter.addPhoto(photo);
@@ -243,6 +248,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         String imageName = image.getName().substring(0, image.getName().lastIndexOf('.'));
         Photo photo = new Photo(imageName, Uri.fromFile(image).toString());
 
+        isPhotoAdded = true;
         saveImageToFirebase(Uri.fromFile(image), imageName);
         photosAdapter.addPhoto(photo);
     }
@@ -272,7 +278,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     private boolean checkChanges() {
         // true if changes exist
         return !title.contentEquals(titleView.getText().toString()) ||
-                !record.contentEquals(recordView.getText().toString());
+                !record.contentEquals(recordView.getText().toString()) ||
+                isPhotoAdded;
     }
 
     private void confirmDeleteDialog() {
@@ -307,6 +314,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                 recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
+                                photosUri.add(0, photoUri);
                                 Log.v(MainActivity.TAG, "Photo URL was bound to record");
                             } else {
                                 Log.v(MainActivity.TAG, "Photo URL binding error");
@@ -320,31 +328,3 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         });
     }
 }
-
-
-    //незнаю чи то треба то для великих зображень
-//    private void setPic() {
-//        // Get the dimensions of the View
-//        int targetW = imageView.getWidth();
-//        int targetH = imageView.getHeight();
-//
-//        // Get the dimensions of the bitmap
-//        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-//        bmOptions.inJustDecodeBounds = true;
-//
-//        int photoW = bmOptions.outWidth;
-//        int photoH = bmOptions.outHeight;
-//
-//        // Determine how much to scale down the image
-//        int scaleFactor = Math.min(photoW / targetW, photoH / targetH);
-//
-//        // Decode the image file into a Bitmap sized to fill the View
-//        bmOptions.inJustDecodeBounds = false;
-//        bmOptions.inSampleSize = scaleFactor;
-//        bmOptions.inPurgeable = true;
-//
-//        Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath, bmOptions);
-//        imageView.setImageBitmap(bitmap);
-//    }
-
-
