@@ -30,9 +30,6 @@ import java.util.Objects;
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = MainActivity.class.getSimpleName();
 
-    public static final String USER_EMAIL = "USER_EMAIL";
-    public static final String USER_NAME = "USER_NAME";
-
     private MenuItem searchItem;
 
     private boolean month = false;
