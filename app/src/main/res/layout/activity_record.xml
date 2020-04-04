@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    tools:context=".RecordActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/recordActivity_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/toolbarBackground"
+        android:elevation="@dimen/toolbar_elevation"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
+
+    <EditText
+        android:id="@+id/recordActivity_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/recordActivity_toolbar"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:maxLength="40"
+        android:layout_margin="@dimen/editTextMargin"
+        android:hint="@string/title"
+        android:importantForAutofill="no" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recordActivity_photos_recycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/recordActivity_title"
+        android:layout_marginStart="@dimen/photoMargin"
+        android:layout_marginEnd="@dimen/photoMargin"/>
+
+    <EditText
+        android:id="@+id/recordActivity_text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/recordActivity_photos_recycler"
+        android:ems="10"
+        android:gravity="start|top"
+        android:layout_margin="@dimen/editTextMargin"
+        android:hint="@string/thought"
+        android:inputType="textMultiLine"
+        android:importantForAutofill="no" />
+
+
+</RelativeLayout>
