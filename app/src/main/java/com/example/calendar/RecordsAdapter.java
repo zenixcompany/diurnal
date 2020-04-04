@@ -1,6 +1,7 @@
 package com.example.calendar;
 
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.Filter;
@@ -141,6 +142,15 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         notifyDataSetChanged();
     }
 
+    public void addRecord(Record record, Calendar calendar) {
+        recordList.add(0, record);
+        recordListForFilter.add(0, record);
+
+        notifyDataSetChanged();
+
+        filterByDate(calendar);
+    }
+
     public void updateRecord(int position, Record record) {
         recordList.get(position).setTitle(record.getTitle());
         recordList.get(position).setText(record.getText());
@@ -151,7 +161,7 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         recordList.add(0, toDelete);
 
         recordListForFilter.get(position).setTitle(record.getTitle());
-        recordListForFilter.get(position).setTitle(record.getText());
+        recordListForFilter.get(position).setText(record.getText());
         recordListForFilter.remove(position);
         recordListForFilter.add(0, toDelete);
 
@@ -162,6 +172,27 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         recordList.remove(position);
         recordListForFilter.remove(position);
 
+        notifyDataSetChanged();
+    }
+
+    public void filterByDate(Calendar calendar) {
+        ArrayList<Record> recordListFiltered = new ArrayList<>();
+        Calendar calendar1 = Calendar.getInstance();
+
+        for (Record record : recordListForFilter) {
+            calendar1.setTime(record.getDate());
+            Log.v(MainActivity.TAG, calendar1.get(Calendar.YEAR) + " " +
+                    calendar1.get(Calendar.MONTH) + " " +
+                    calendar1.get(Calendar.DATE));
+            if (calendar1.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
+            calendar1.get(Calendar.MONTH) == calendar.get(Calendar.MONTH) &&
+            calendar1.get(Calendar.DATE) == calendar.get(Calendar.DATE)) {
+                recordListFiltered.add(record);
+            }
+        }
+
+        recordList.clear();
+        recordList.addAll(recordListFiltered);
         notifyDataSetChanged();
     }
 

@@ -2,7 +2,6 @@ package com.example.calendar;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,25 +9,19 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.calendar.models.Record;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Objects;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -102,12 +95,16 @@ public class RecordsFragment extends Fragment {
                 , "date", FieldValue.serverTimestamp()).addOnCompleteListener(task -> {
                    if (task.isSuccessful()) {
                        Log.v(MainActivity.TAG, "Note has been updated");
-
-                       Record record = new Record();
-                       record.setTitle(title);
-                       record.setText(recordText);
-
-                       recordsAdapter.updateRecord(position, record);
+                       dR.get().addOnCompleteListener(task1 -> {
+                           if (task1.isSuccessful()) {
+                               Date date = task1.getResult().getDate("date");
+                               Record record = new Record();
+                               record.setTitle(title);
+                               record.setText(recordText);
+                               record.setDate(date);
+                               recordsAdapter.updateRecord(position, record);
+                           }
+                       });
                    } else {
                         Log.v(MainActivity.TAG, "Note update has been failed");
                    }

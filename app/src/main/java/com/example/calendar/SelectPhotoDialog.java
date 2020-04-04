@@ -3,7 +3,6 @@ package com.example.calendar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -16,19 +15,15 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.DialogFragment;
 
 public class SelectPhotoDialog extends DialogFragment {
 
-    OnPhotoSelectedListener photoSelectedListener;
+    private OnPhotoSelectedListener photoSelectedListener;
 
     private String currentPhotoPath;
     private File photoFile = null;

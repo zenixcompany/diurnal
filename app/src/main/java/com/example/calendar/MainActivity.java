@@ -1,6 +1,7 @@
 package com.example.calendar;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import com.example.calendar.models.Record;
@@ -14,6 +15,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.res.ResourcesCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.util.Log;
@@ -21,7 +24,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Objects;
 
@@ -30,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String USER_EMAIL = "USER_EMAIL";
     public static final String USER_NAME = "USER_NAME";
+
+    private MenuItem searchItem;
 
     private boolean month = false;
 
@@ -42,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment());
+        fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment(), "visible_fragment");
         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         fragmentTransaction.commit();
 
@@ -87,11 +91,13 @@ public class MainActivity extends AppCompatActivity {
                            record.setDate(date);
 
                            Log.v(TAG, "Okay, cool.");
-                           RecordsFragment recordsFragment = (RecordsFragment)
-                                   getSupportFragmentManager().findFragmentById(R.id.fragment_records);
+                           Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
 
-                           if (recordsFragment != null && recordsFragment.isAdded()) {
-                               recordsFragment.recordsAdapter.addRecord(record);
+                           if (fragment instanceof RecordsFragment) {
+                                ((RecordsFragment) fragment).recordsAdapter.addRecord(record);
+                           } else if (fragment instanceof CalendarFragment) {
+                               ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
+                                       ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
                            }
                        });
 
@@ -107,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
-        MenuItem searchItem = menu.findItem(R.id.action_search);
+       searchItem = menu.findItem(R.id.action_search);
 
         SearchView searchView = (SearchView) searchItem.getActionView();
         searchView.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -137,6 +143,18 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
             case R.id.action_month:
+                if (month) {
+                    Drawable drawable = ResourcesCompat.getDrawable(getResources(),
+                            R.drawable.ic_apps_black_24dp, null);
+
+                    item.setIcon(drawable);
+                    searchItem.setVisible(true);
+                } else {
+                    Drawable drawable = ResourcesCompat.getDrawable(getResources(),
+                            R.drawable.ic_view_list_black_24dp, null);
+                    item.setIcon(drawable);
+                    searchItem.setVisible(false);
+                }
                 changeFragments(month);
                 break;
             case R.id.action_sign_out:
@@ -149,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
     private void changeFragments(boolean isMonth) {
         if (isMonth) {
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment());
+            fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment(), "visible_fragment");
             fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             fragmentTransaction.commit();
 
@@ -157,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
             CalendarFragment calendarFragment = new CalendarFragment();
-            ft.replace(R.id.fragment_records, calendarFragment);
+            ft.replace(R.id.fragment_records, calendarFragment, "visible_fragment");
             ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             ft.commit();
 
