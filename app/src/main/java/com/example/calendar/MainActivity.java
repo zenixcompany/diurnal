@@ -180,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
                             ((RecordsFragment) fragment).recordsAdapter.deleteRecord(position);
                         } else if (fragment instanceof CalendarFragment) {
                             ((CalendarFragment) fragment).recordsAdapter.deleteRecord(position);
+                            ((CalendarFragment) fragment).updateCalendarDots();
                         }
                     }
                 });

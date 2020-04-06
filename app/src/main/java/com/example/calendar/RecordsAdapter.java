@@ -22,8 +22,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHolder>
             implements Filterable {
-    public ArrayList<Record> recordList;
-    private ArrayList<Record> recordListForFilter;
+    private ArrayList<Record> recordList;
+    public ArrayList<Record> recordListForFilter;
 
     private HashMap<String, Integer> dayNamesColors;
 
