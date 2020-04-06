@@ -1,6 +1,5 @@
 package com.example.calendar;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,18 +10,14 @@ import android.view.ViewGroup;
 import com.example.calendar.models.Record;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Objects;
 
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -64,7 +59,7 @@ public class RecordsFragment extends Fragment {
             intent.putExtra(RecordActivity.RECORD, recordsList.get(position).getText());
             intent.putExtra(RecordActivity.PHOTOS, recordsList.get(position).getPhotos());
 
-            startActivityForResult(intent, MainActivity.EDIT_NOTE);
+            getActivity().startActivityForResult(intent, MainActivity.EDIT_NOTE);
         });
         recordsRecycler.setAdapter(recordsAdapter);
 
@@ -73,59 +68,6 @@ public class RecordsFragment extends Fragment {
 
         getNotes();
         return view;
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == MainActivity.EDIT_NOTE) {
-            String noteId;
-            int position;
-            if (resultCode == Activity.RESULT_OK) {
-                noteId = data.getStringExtra(RecordActivity.NOTE_ID);
-                position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
-                String title = data.getStringExtra(RecordActivity.TITLE);
-                String recordText = data.getStringExtra(RecordActivity.RECORD);
-                ArrayList<String> photoURIs = data.getStringArrayListExtra(RecordActivity.PHOTOS);
-
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-                DocumentReference dR = db.collection("records").document(noteId);
-                dR.update("title", title, "text", recordText,
-                        "date", FieldValue.serverTimestamp()).addOnCompleteListener(task -> {
-                   if (task.isSuccessful()) {
-                       Log.v(MainActivity.TAG, "Note has been updated");
-                       dR.get().addOnCompleteListener(task1 -> {
-                           if (task1.isSuccessful()) {
-                               Date date = task1.getResult().getDate("date");
-                               Record record = new Record();
-                               record.setTitle(title);
-                               record.setText(recordText);
-                               record.setDate(date);
-                               record.setPhotos(photoURIs);
-                               recordsAdapter.updateRecord(position, record);
-                           }
-                       });
-                   } else {
-                        Log.v(MainActivity.TAG, "Note update has been failed");
-                   }
-                });
-            } else if (resultCode == MainActivity.DELETE_NOTE) {
-                noteId = data.getStringExtra(RecordActivity.NOTE_ID);
-                position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
-                Log.v(MainActivity.TAG, "DAMN, this shit works!");
-
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-                DocumentReference docRef = db.collection("records").document(noteId);
-                docRef.delete().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        recordsAdapter.deleteRecord(position);
-                    }
-                });
-            }
-        }
     }
 
     public void getNotes() {

@@ -1,5 +1,6 @@
 package com.example.calendar;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -8,7 +9,10 @@ import com.example.calendar.models.Record;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,6 +28,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Objects;
 
@@ -101,6 +106,82 @@ public class MainActivity extends AppCompatActivity {
                    } else {
                         Log.v(TAG, "Some shit happened");
                    }
+                });
+            }
+        } else if (requestCode == MainActivity.EDIT_NOTE) {
+            String noteId;
+            int position;
+            ArrayList<String> photoURIs;
+            if (resultCode == Activity.RESULT_OK) {
+                noteId = data.getStringExtra(RecordActivity.NOTE_ID);
+                position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
+                String title = data.getStringExtra(RecordActivity.TITLE);
+                String recordText = data.getStringExtra(RecordActivity.RECORD);
+                photoURIs = data.getStringArrayListExtra(RecordActivity.PHOTOS);
+
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                DocumentReference dR = db.collection("records").document(noteId);
+                dR.update("title", title, "text", recordText,
+                        "date", FieldValue.serverTimestamp()).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.v(MainActivity.TAG, "Note has been updated");
+                        dR.get().addOnCompleteListener(task1 -> {
+                            if (task1.isSuccessful()) {
+                                Date date = task1.getResult().getDate("date");
+                                Record record = new Record();
+                                record.setTitle(title);
+                                record.setText(recordText);
+                                record.setDate(date);
+                                record.setPhotos(photoURIs);
+
+                                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                                if (fragment instanceof RecordsFragment) {
+                                    ((RecordsFragment) fragment).recordsAdapter.updateRecord(position, record);
+                                } else if (fragment instanceof CalendarFragment) {
+                                    ((CalendarFragment) fragment).recordsAdapter.updateRecord
+                                            (position, record, ((CalendarFragment) fragment)
+                                                    .calendarView.getFirstSelectedDate());
+                                    ((CalendarFragment) fragment).updateCalendarDots();
+                                }
+                            }
+                        });
+                    } else {
+                        Log.v(MainActivity.TAG, "Note update has been failed");
+                    }
+                });
+            } else if (resultCode == MainActivity.DELETE_NOTE) {
+                noteId = data.getStringExtra(RecordActivity.NOTE_ID);
+                position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
+                photoURIs = data.getStringArrayListExtra(RecordActivity.PHOTOS);
+
+                Log.v(MainActivity.TAG, "DAMN, this shit works!");
+
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                DocumentReference docRef = db.collection("records").document(noteId);
+                docRef.delete().addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (photoURIs != null) {
+                            for (String photoURI : photoURIs) {
+                                StorageReference storageRef = FirebaseStorage.getInstance()
+                                        .getReferenceFromUrl(photoURI);
+
+                                storageRef.delete().addOnSuccessListener(aVoid -> {
+                                    Log.v(MainActivity.TAG, "Photo has been deleted successfully");
+                                }).addOnFailureListener(e -> {
+                                    Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
+                                });
+                            }
+                        }
+
+                        Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                        if (fragment instanceof RecordsFragment) {
+                            ((RecordsFragment) fragment).recordsAdapter.deleteRecord(position);
+                        } else if (fragment instanceof CalendarFragment) {
+                            ((CalendarFragment) fragment).recordsAdapter.deleteRecord(position);
+                        }
+                    }
                 });
             }
         }
