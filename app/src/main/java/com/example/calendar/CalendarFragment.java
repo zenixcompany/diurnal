@@ -1,5 +1,6 @@
 package com.example.calendar;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import android.util.Log;
@@ -53,6 +54,18 @@ public class CalendarFragment extends Fragment {
 
         ArrayList<Record> recordList = new ArrayList<>();
         recordsAdapter = new RecordsAdapter(recordList);
+        recordsAdapter.setListener(position -> {
+            Intent intent = new Intent(getActivity(), RecordActivity.class);
+
+            intent.putExtra(RecordActivity.ACTION, RecordActivity.EDIT_NOTE);
+            intent.putExtra(RecordActivity.NOTE_ID, recordList.get(position).getNote_id());
+            intent.putExtra(RecordActivity.NOTE_POSITION, position);
+            intent.putExtra(RecordActivity.TITLE, recordList.get(position).getTitle());
+            intent.putExtra(RecordActivity.RECORD, recordList.get(position).getText());
+            intent.putExtra(RecordActivity.PHOTOS, recordList.get(position).getPhotos());
+
+            getActivity().startActivityForResult(intent, MainActivity.EDIT_NOTE);
+        });
 
         db = FirebaseFirestore.getInstance();
         collectionReference = db.collection("records");
@@ -69,14 +82,6 @@ public class CalendarFragment extends Fragment {
         calendarView.setForwardButtonImage(ResourcesCompat.getDrawable(getResources(),
                 R.drawable.ic_keyboard_arrow_right, null));
 
-//        Calendar calendar = Calendar.getInstance();
-//        events.add(new EventDay(calendar, R.drawable.ic_brightness_1_black_24dp));
-//
-//        Calendar calendar1 = Calendar.getInstance();
-//        calendar1.set(Calendar.DATE, 30);
-//        calendar1.set(Calendar.MONTH, 4);
-//        events.add(new EventDay(calendar1, R.drawable.ic_apps_black_24dp));
-
         calendarView.setEvents(events);
 
         calendarView.setOnDayClickListener(eventDay -> {
@@ -85,6 +90,21 @@ public class CalendarFragment extends Fragment {
         });
 
         return view;
+    }
+
+    public void updateCalendarDots() {
+        events.clear();
+        for(Record record : recordsAdapter.recordList) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(record.getDate());
+
+            Calendar calendar1 = Calendar.getInstance();
+            calendar1.set(Calendar.YEAR, calendar.get(Calendar.YEAR));
+            calendar1.set(Calendar.MONTH, calendar.get(Calendar.MONTH));
+            calendar1.set(Calendar.DATE, calendar.get(Calendar.DATE));
+            events.add(new EventDay(calendar1, R.drawable.ic_brightness_1_black_24dp));
+        }
+        calendarView.setEvents(events);
     }
 
     public void getNotes() {

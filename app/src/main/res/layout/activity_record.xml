@@ -26,6 +26,7 @@
         android:maxLength="40"
         android:layout_margin="@dimen/editTextMargin"
         android:hint="@string/title"
+        android:fontFamily="@font/roboto"
         android:importantForAutofill="no" />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -45,6 +46,7 @@
         android:gravity="start|top"
         android:layout_margin="@dimen/editTextMargin"
         android:hint="@string/thought"
+        android:fontFamily="@font/roboto"
         android:inputType="textMultiLine"
         android:importantForAutofill="no" />
 

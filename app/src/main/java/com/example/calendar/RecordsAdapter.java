@@ -135,7 +135,6 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     }
 
     public void addRecord(Record record) {
-        // TODO Try to make this shit filtered explicitly by RecyclerView filter
         recordList.add(0, record);
         recordListForFilter.add(0, record);
 
@@ -170,6 +169,29 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         recordListForFilter.add(0, toDelete);
 
         notifyDataSetChanged();
+    }
+
+    public void updateRecord(int position, Record record, Calendar calendar) {
+        recordList.get(position).setTitle(record.getTitle());
+        recordList.get(position).setText(record.getText());
+        recordList.get(position).setDate(record.getDate());
+        recordList.get(position).setPhotos(record.getPhotos());
+
+        Record toDelete = recordList.get(position);
+        recordList.remove(position);
+
+        recordList.add(0, toDelete);
+
+        recordListForFilter.get(position).setTitle(record.getTitle());
+        recordListForFilter.get(position).setText(record.getText());
+        recordListForFilter.get(position).setDate(record.getDate());
+        recordListForFilter.get(position).setPhotos(record.getPhotos());
+        recordListForFilter.remove(position);
+        recordListForFilter.add(0, toDelete);
+
+        notifyDataSetChanged();
+
+        filterByDate(calendar);
     }
 
     public void deleteRecord(int position) {
