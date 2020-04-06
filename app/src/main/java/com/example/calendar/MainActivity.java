@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
                            } else if (fragment instanceof CalendarFragment) {
                                ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
                                        ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
+                               ((CalendarFragment) fragment).updateCalendarDots();
                            }
                        });
 

@@ -94,7 +94,6 @@ public class CalendarFragment extends Fragment {
 
     public void updateCalendarDots() {
         events.clear();
-        events = new ArrayList<>();
         for(Record record : recordsAdapter.recordListForFilter) {
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(record.getDate());

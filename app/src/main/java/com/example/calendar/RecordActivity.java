@@ -1,12 +1,14 @@
 package com.example.calendar;
 
 import android.Manifest;
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
@@ -21,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.util.Log;
+import android.widget.ImageButton;
 
 import com.example.calendar.models.Photo;
 import com.google.android.gms.tasks.Task;
@@ -35,10 +38,12 @@ import com.google.firebase.storage.StorageReference;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-public class RecordActivity extends AppCompatActivity implements SelectPhotoDialog.OnPhotoSelectedListener {
+public class RecordActivity extends AppCompatActivity implements SelectPhotoDialog.OnPhotoSelectedListener,
+                                                                    DatePickerDialog.OnDateSetListener{
     public static final int REQUEST_PERMISSIONS = 299;
     public static final int REQUEST_TAKE_PHOTO = 300;
     public static final int REQUEST_CHOOSE_PHOTO = 301;
@@ -49,6 +54,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     public static final String TITLE = "TITLE";
     public static final String RECORD = "RECORD";
+    public static final String DATE = "DATE";
     public static final String NOTE_ID = "NOTE_ID";
     public static final String NOTE_POSITION = "NOTE_POSITION";
     public static final String PHOTOS = "PHOTOS";
@@ -60,13 +66,16 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     private Intent intent;
 
+    private ImageButton deleteButton;
+    private ImageButton editDoneButton;
+    private Button calendarPicker;
     private EditText titleView;
     private EditText recordView;
 
     private String title;
     private String record;
     private String recordId;
-    private int recordPosition;
+    private Date noteDate;
     private ArrayList<String> photosUri;
 
     private PhotosAdapter photosAdapter;
@@ -81,29 +90,84 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
         titleView = findViewById(R.id.recordActivity_title);
         recordView = findViewById(R.id.recordActivity_text);
+
+        editDoneButton = findViewById(R.id.recordActivity_edit_done);
+        deleteButton = findViewById(R.id.recordActivity_delete);
+        calendarPicker = findViewById(R.id.recordActivity_date);
+
         RecyclerView photosRecycler = findViewById(R.id.recordActivity_photos_recycler);
 
         intent = getIntent();
         if (intent.getExtras() != null) {
             String actionStr = intent.getExtras().getString(ACTION);
+            noteDate = (Date) intent.getExtras().getSerializable(DATE);
+            Calendar calendar = Calendar.getInstance();
+
+            calendarPicker.setOnClickListener(view -> showDatePickerDialog());
+
             if (actionStr.contentEquals(CREATE_NOTE)) {
                 action = false;
 
+                String date = calendar.get(Calendar.MONTH)+1 + "/" +
+                        calendar.get(Calendar.DAY_OF_MONTH) + "/" +
+                        calendar.get(Calendar.YEAR);
+                calendarPicker.setText(date);
+
+                editDoneButton.setVisibility(View.GONE);
+                deleteButton.setVisibility(View.GONE);
+
             } else if (actionStr.contentEquals(EDIT_NOTE)) {
                 action = true;
+                calendar.setTime(noteDate);
+
+                String date = calendar.get(Calendar.MONTH)+1 + "/" +
+                        calendar.get(Calendar.DAY_OF_MONTH) + "/" +
+                        calendar.get(Calendar.YEAR);
+                calendarPicker.setText(date);
 
                 recordId = getIntent().getStringExtra(NOTE_ID);
-                recordPosition = getIntent().getExtras().getInt(NOTE_POSITION);
 
                 titleView.setText(intent.getStringExtra(TITLE));
                 recordView.setText(intent.getStringExtra(RECORD));
+
 
                 titleView.setInputType(InputType.TYPE_NULL);
                 titleView.setOnKeyListener((view, i, keyEvent) -> true);
                 recordView.setInputType(InputType.TYPE_NULL);
                 recordView.setOnKeyListener((view, i, keyEvent) -> true);
                 recordView.setSingleLine(false);
+
+                Drawable editDrawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
+                editDoneButton.setImageDrawable(editDrawable);
+
                 isEditing = false;
+
+                editDoneButton.setOnClickListener(view -> {
+                    if (isEditing) {
+                        titleView.setInputType(InputType.TYPE_NULL);
+                        titleView.setOnKeyListener((view1, i, keyEvent) -> true);
+                        recordView.setInputType(InputType.TYPE_NULL);
+                        recordView.setOnKeyListener((view1, i, keyEvent) -> true);
+                        recordView.setSingleLine(false);
+
+                        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
+                        editDoneButton.setImageDrawable(drawable);
+
+                        isEditing = false;
+                    } else {
+                        titleView.setInputType(InputType.TYPE_CLASS_TEXT);
+                        titleView.setOnKeyListener(null);
+                        recordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+                        recordView.setOnKeyListener(null);
+
+                        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
+                        editDoneButton.setImageDrawable(drawable);
+
+                        isEditing = true;
+                    }
+                });
+
+                deleteButton.setOnClickListener(view -> confirmDeleteDialog());
 
                 photosUri = getIntent().getStringArrayListExtra(PHOTOS);
             }
@@ -151,6 +215,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
     }
 
@@ -171,55 +236,6 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_record, menu);
-        if (action) {
-            Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
-            menu.getItem(1).setIcon(drawable);
-        } else {
-            menu.getItem(0).setVisible(false);
-            menu.getItem(1).setVisible(false);
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_record_edit_done:
-                if (isEditing) {
-                    titleView.setInputType(InputType.TYPE_NULL);
-                    titleView.setOnKeyListener((view, i, keyEvent) -> true);
-                    recordView.setInputType(InputType.TYPE_NULL);
-                    recordView.setOnKeyListener((view, i, keyEvent) -> true);
-                    recordView.setSingleLine(false);
-
-                    Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
-                    item.setIcon(drawable);
-
-                    isEditing = false;
-                } else {
-                    titleView.setInputType(InputType.TYPE_CLASS_TEXT);
-                    titleView.setOnKeyListener(null);
-                    recordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-                    recordView.setOnKeyListener(null);
-
-                    Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
-                    item.setIcon(drawable);
-
-                    isEditing = true;
-                }
-                break;
-            case R.id.action_record_delete:
-                confirmDeleteDialog();
-                break;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     public String createImageName() {
@@ -326,5 +342,20 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         }).addOnFailureListener(e -> {
             Log.v(MainActivity.TAG, "Shitty");
         });
+    }
+
+    private void showDatePickerDialog() {
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                                                this,
+                                                Calendar.getInstance().get(Calendar.YEAR),
+                                                Calendar.getInstance().get(Calendar.MONTH),
+                                                Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
+    }
+
+    @Override
+    public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
+        String date = i1+1 + "/" + i2 + "/" + i;
+        calendarPicker.setText(date);
     }
 }

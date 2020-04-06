@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/toolbarBackground"
+    android:elevation="@dimen/toolbar_elevation"
+    android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+    app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/recordActivity_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:text="@string/test"
+            android:textColor="@android:color/black"
+            android:fontFamily="@font/roboto"
+            android:textSize="18sp"
+            android:drawableEnd="@drawable/ic_event_note_black_24dp"
+            android:drawablePadding="@dimen/drawable_padding"
+            android:background="@color/toolbarBackground"
+            android:backgroundTint="@color/toolbarBackground"
+            style="@style/Widget.AppCompat.Button.Borderless"/>
+
+        <ImageButton
+            android:id="@+id/recordActivity_edit_done"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:contentDescription="@string/edit"
+            android:backgroundTint="@color/toolbarBackground"
+            app:srcCompat="@drawable/ic_mode_edit_black_24dp"/>
+
+        <ImageButton
+            android:id="@+id/recordActivity_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/recordActivity_edit_done"
+            android:contentDescription="@string/delete"
+            android:backgroundTint="@color/toolbarBackground"
+            app:srcCompat="@drawable/ic_delete_black_24dp"/>
+
+    </RelativeLayout>
+
+</androidx.appcompat.widget.Toolbar>

@@ -57,6 +57,7 @@ public class RecordsFragment extends Fragment {
             intent.putExtra(RecordActivity.NOTE_POSITION, position);
             intent.putExtra(RecordActivity.TITLE, recordsList.get(position).getTitle());
             intent.putExtra(RecordActivity.RECORD, recordsList.get(position).getText());
+            intent.putExtra(RecordActivity.DATE, recordsList.get(position).getDate());
             intent.putExtra(RecordActivity.PHOTOS, recordsList.get(position).getPhotos());
 
             getActivity().startActivityForResult(intent, MainActivity.EDIT_NOTE);
