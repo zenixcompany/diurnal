@@ -1,19 +1,15 @@
 package com.example.calendar.models;
 
-import com.google.firebase.database.IgnoreExtraProperties;
-import com.google.firebase.firestore.ServerTimestamp;
-
 import java.util.ArrayList;
 import java.util.Date;
 
-@IgnoreExtraProperties
 public class Record {
     private String user_id;
     private String note_id;
 
     private String title;
     private String text;
-    private @ServerTimestamp Date date;
+    private Date date;
 
     private ArrayList<String> photos;
 

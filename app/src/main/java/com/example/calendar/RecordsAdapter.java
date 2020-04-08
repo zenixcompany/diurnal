@@ -12,6 +12,8 @@ import com.example.calendar.models.Record;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Objects;
@@ -60,6 +62,15 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
             recordList.addAll((ArrayList)filterResults.values);
 
             notifyDataSetChanged();
+        }
+    };
+
+    private Comparator<Record> sortByDate = new Comparator<Record>() {
+        @Override
+        public int compare(Record record, Record t1) {
+            if (record.getDate().getTime() < t1.getDate().getTime()) return 1;
+            else if (record.getDate().getTime() > t1.getDate().getTime()) return -1;
+            else return 0;
         }
     };
 
@@ -135,17 +146,18 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     }
 
     public void addRecord(Record record) {
-        recordList.add(0, record);
-        recordListForFilter.add(0, record);
+        recordList.add(record);
+        recordListForFilter.add(record);
+
+        Collections.sort(recordList, sortByDate);
+        Collections.sort(recordListForFilter, sortByDate);
 
         notifyDataSetChanged();
     }
 
     public void addRecord(Record record, Calendar calendar) {
-        recordList.add(0, record);
-        recordListForFilter.add(0, record);
-
-        notifyDataSetChanged();
+        recordList.add(record);
+        recordListForFilter.add(record);
 
         filterByDate(calendar);
     }
@@ -159,14 +171,17 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         Record toDelete = recordList.get(position);
         recordList.remove(position);
 
-        recordList.add(0, toDelete);
+        recordList.add(toDelete);
 
         recordListForFilter.get(position).setTitle(record.getTitle());
         recordListForFilter.get(position).setText(record.getText());
         recordListForFilter.get(position).setDate(record.getDate());
         recordListForFilter.get(position).setPhotos(record.getPhotos());
         recordListForFilter.remove(position);
-        recordListForFilter.add(0, toDelete);
+        recordListForFilter.add(toDelete);
+
+        Collections.sort(recordList, sortByDate);
+        Collections.sort(recordListForFilter, sortByDate);
 
         notifyDataSetChanged();
     }
@@ -180,16 +195,14 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         Record toDelete = recordList.get(position);
         recordList.remove(position);
 
-        recordList.add(0, toDelete);
+        recordList.add(toDelete);
 
         recordListForFilter.get(position).setTitle(record.getTitle());
         recordListForFilter.get(position).setText(record.getText());
         recordListForFilter.get(position).setDate(record.getDate());
         recordListForFilter.get(position).setPhotos(record.getPhotos());
         recordListForFilter.remove(position);
-        recordListForFilter.add(0, toDelete);
-
-        notifyDataSetChanged();
+        recordListForFilter.add(toDelete);
 
         filterByDate(calendar);
     }

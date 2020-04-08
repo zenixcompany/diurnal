@@ -83,26 +83,22 @@ public class MainActivity extends AppCompatActivity {
                 record.setText(data.getStringExtra(RecordActivity.RECORD));
                 record.setNote_id(newRecordRef.getId());
                 record.setUser_id(user_id);
+                record.setDate((Date) data.getSerializableExtra(RecordActivity.DATE));
 
                 newRecordRef.set(record).addOnCompleteListener(task -> {
                    if (task.isSuccessful()) {
                        Log.v(TAG, "Say me this shit");
-                       newRecordRef.get().addOnCompleteListener(task1 -> {
-                           Date date = task1.getResult().getDate("date");
-                           Log.v(TAG, date.toString());
-                           record.setDate(date);
 
-                           Log.v(TAG, "Okay, cool.");
-                           Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                       Log.v(TAG, "Okay, cool.");
+                       Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
 
-                           if (fragment instanceof RecordsFragment) {
-                                ((RecordsFragment) fragment).recordsAdapter.addRecord(record);
-                           } else if (fragment instanceof CalendarFragment) {
-                               ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
-                                       ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
-                               ((CalendarFragment) fragment).updateCalendarDots();
-                           }
-                       });
+                       if (fragment instanceof RecordsFragment) {
+                            ((RecordsFragment) fragment).recordsAdapter.addRecord(record);
+                       } else if (fragment instanceof CalendarFragment) {
+                           ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
+                                   ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
+                           ((CalendarFragment) fragment).updateCalendarDots();
+                       }
 
                    } else {
                         Log.v(TAG, "Some shit happened");
@@ -118,35 +114,31 @@ public class MainActivity extends AppCompatActivity {
                 position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
                 String title = data.getStringExtra(RecordActivity.TITLE);
                 String recordText = data.getStringExtra(RecordActivity.RECORD);
-                photoURIs = data.getStringArrayListExtra(RecordActivity.PHOTOS);
+                Date date = (Date) data.getSerializableExtra(RecordActivity.DATE);
+                photoURIs = new ArrayList<>(data.getStringArrayListExtra(RecordActivity.PHOTOS));
 
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
 
                 DocumentReference dR = db.collection("records").document(noteId);
                 dR.update("title", title, "text", recordText,
-                        "date", FieldValue.serverTimestamp()).addOnCompleteListener(task -> {
+                        "date", date).addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         Log.v(MainActivity.TAG, "Note has been updated");
-                        dR.get().addOnCompleteListener(task1 -> {
-                            if (task1.isSuccessful()) {
-                                Date date = task1.getResult().getDate("date");
-                                Record record = new Record();
-                                record.setTitle(title);
-                                record.setText(recordText);
-                                record.setDate(date);
-                                record.setPhotos(photoURIs);
+                        Record record = new Record();
+                        record.setTitle(title);
+                        record.setText(recordText);
+                        record.setDate(date);
+                        record.setPhotos(photoURIs);
 
-                                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
-                                if (fragment instanceof RecordsFragment) {
-                                    ((RecordsFragment) fragment).recordsAdapter.updateRecord(position, record);
-                                } else if (fragment instanceof CalendarFragment) {
-                                    ((CalendarFragment) fragment).recordsAdapter.updateRecord
-                                            (position, record, ((CalendarFragment) fragment)
-                                                    .calendarView.getFirstSelectedDate());
-                                    ((CalendarFragment) fragment).updateCalendarDots();
-                                }
-                            }
-                        });
+                        Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                        if (fragment instanceof RecordsFragment) {
+                            ((RecordsFragment) fragment).recordsAdapter.updateRecord(position, record);
+                        } else if (fragment instanceof CalendarFragment) {
+                            ((CalendarFragment) fragment).recordsAdapter.updateRecord
+                                    (position, record, ((CalendarFragment) fragment)
+                                            .calendarView.getFirstSelectedDate());
+                            ((CalendarFragment) fragment).updateCalendarDots();
+                        }
                     } else {
                         Log.v(MainActivity.TAG, "Note update has been failed");
                     }

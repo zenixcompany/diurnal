@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -24,6 +25,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.util.Log;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 
 import com.example.calendar.models.Photo;
 import com.google.android.gms.tasks.Task;
@@ -66,6 +68,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     private Intent intent;
 
+    private ProgressBar progressBar;
     private ImageButton deleteButton;
     private ImageButton editDoneButton;
     private Button calendarPicker;
@@ -76,6 +79,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     private String record;
     private String recordId;
     private Date noteDate;
+    private Date newDate;
     private ArrayList<String> photosUri;
 
     private PhotosAdapter photosAdapter;
@@ -88,6 +92,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record);
 
+        progressBar = findViewById(R.id.recordActivity_progress_bar);
         titleView = findViewById(R.id.recordActivity_title);
         recordView = findViewById(R.id.recordActivity_text);
 
@@ -112,6 +117,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                         calendar.get(Calendar.DAY_OF_MONTH) + "/" +
                         calendar.get(Calendar.YEAR);
                 calendarPicker.setText(date);
+
+                noteDate = calendar.getTime();
 
                 editDoneButton.setVisibility(View.GONE);
                 deleteButton.setVisibility(View.GONE);
@@ -224,8 +231,11 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         if (checkChanges()) {
             intent.putExtra(TITLE, titleView.getText().toString());
             intent.putExtra(RECORD, recordView.getText().toString());
+            if (newDate != null)
+                intent.putExtra(DATE, newDate);
+            else
+                intent.putExtra(DATE, noteDate);
             intent.putExtra(PHOTOS, photosUri);
-
             setResult(RESULT_OK, intent);
         }
 
@@ -295,7 +305,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         // true if changes exist
         return !title.contentEquals(titleView.getText().toString()) ||
                 !record.contentEquals(recordView.getText().toString()) ||
-                isPhotoAdded;
+                isPhotoAdded || newDate != null;
     }
 
     private void confirmDeleteDialog() {
@@ -332,6 +342,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                             if (task.isSuccessful()) {
                                 photosUri.add(0, photoUri);
                                 Log.v(MainActivity.TAG, "Photo URL was bound to record");
+                                progressBar.setVisibility(View.GONE);
+                                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
                             } else {
                                 Log.v(MainActivity.TAG, "Photo URL binding error");
                             }
@@ -341,6 +353,10 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
         }).addOnFailureListener(e -> {
             Log.v(MainActivity.TAG, "Shitty");
+        }).addOnProgressListener(taskSnapshot -> {
+            progressBar.setVisibility(View.VISIBLE);
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
         });
     }
 
@@ -355,6 +371,12 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     @Override
     public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, i);
+        calendar.set(Calendar.MONTH, i1);
+        calendar.set(Calendar.DAY_OF_MONTH, i2);
+        newDate = calendar.getTime();
+
         String date = i1+1 + "/" + i2 + "/" + i;
         calendarPicker.setText(date);
     }

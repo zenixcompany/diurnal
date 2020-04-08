@@ -62,6 +62,7 @@ public class CalendarFragment extends Fragment {
             intent.putExtra(RecordActivity.NOTE_POSITION, position);
             intent.putExtra(RecordActivity.TITLE, recordList.get(position).getTitle());
             intent.putExtra(RecordActivity.RECORD, recordList.get(position).getText());
+            intent.putExtra(RecordActivity.DATE, recordList.get(position).getDate());
             intent.putExtra(RecordActivity.PHOTOS, recordList.get(position).getPhotos());
 
             getActivity().startActivityForResult(intent, MainActivity.EDIT_NOTE);
