@@ -41,6 +41,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 
@@ -57,6 +58,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     public static final String TITLE = "TITLE";
     public static final String RECORD = "RECORD";
     public static final String DATE = "DATE";
+    public static final String CHOSE_DATE = "CHOSE_DATE";
     public static final String NOTE_ID = "NOTE_ID";
     public static final String NOTE_POSITION = "NOTE_POSITION";
     public static final String PHOTOS = "PHOTOS";
@@ -106,6 +108,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         if (intent.getExtras() != null) {
             String actionStr = intent.getExtras().getString(ACTION);
             noteDate = (Date) intent.getExtras().getSerializable(DATE);
+            Calendar choseCalendar = (Calendar) intent.getExtras().getSerializable(CHOSE_DATE);
             Calendar calendar = Calendar.getInstance();
 
             calendarPicker.setOnClickListener(view -> showDatePickerDialog());
@@ -113,11 +116,16 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             if (actionStr.contentEquals(CREATE_NOTE)) {
                 action = false;
 
+                if (choseCalendar != null) {
+                    calendar.set(Calendar.YEAR, choseCalendar.get(Calendar.YEAR));
+                    calendar.set(Calendar.MONTH, choseCalendar.get(Calendar.MONTH));
+                    calendar.set(Calendar.DAY_OF_MONTH, choseCalendar.get(Calendar.DAY_OF_MONTH));
+                }
+
                 String date = calendar.get(Calendar.MONTH)+1 + "/" +
                         calendar.get(Calendar.DAY_OF_MONTH) + "/" +
                         calendar.get(Calendar.YEAR);
                 calendarPicker.setText(date);
-
                 noteDate = calendar.getTime();
 
                 editDoneButton.setVisibility(View.GONE);
@@ -187,34 +195,33 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
         ArrayList<Photo> photos = new ArrayList<>();
 
-        if (action) {
-            photos.add(new Photo("Add a photo", "photo"));
-            if (photosUri != null) {
-                for (String photoUri : photosUri) {
-                    photos.add(new Photo("dipa", photoUri));
-                }
-            } else {
-                photosUri = new ArrayList<>();
+
+        photos.add(new Photo("Add a photo", "photo"));
+        if (photosUri != null) {
+            Collections.reverse(photosUri);
+            for (String photoUri : photosUri) {
+                photos.add(new Photo("dipa", photoUri));
             }
-
-
-            photosAdapter = new PhotosAdapter(this, photos);
-            photosAdapter.setListener(position -> {
-                if (position == 0) {
-                    verifyPermissions();
-                    SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
-                    selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
-                }
-            });
-            photosRecycler.setAdapter(photosAdapter);
-
-            LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-            photosRecycler.setLayoutManager(layoutManager);
-
-            db = FirebaseFirestore.getInstance();
-            recordsRef = db.collection("records");
+        } else {
+            photosUri = new ArrayList<>();
         }
 
+
+        photosAdapter = new PhotosAdapter(this, photos);
+        photosAdapter.setListener(position -> {
+            if (position == 0) {
+                verifyPermissions();
+                SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
+                selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+            }
+        });
+        photosRecycler.setAdapter(photosAdapter);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        photosRecycler.setLayoutManager(layoutManager);
+
+        db = FirebaseFirestore.getInstance();
+        recordsRef = db.collection("records");
 
         Toolbar toolbar = findViewById(R.id.recordActivity_toolbar);
         setSupportActionBar(toolbar);
@@ -262,8 +269,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         Log.v(MainActivity.TAG, imagePath.toString());
 
         isPhotoAdded = true;
-        saveImageToFirebase(imagePath, imageName);
 
+        saveImageToFirebase(imagePath, imageName);
         photosAdapter.addPhoto(photo);
     }
 
@@ -275,6 +282,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         Photo photo = new Photo(imageName, Uri.fromFile(image).toString());
 
         isPhotoAdded = true;
+
         saveImageToFirebase(Uri.fromFile(image), imageName);
         photosAdapter.addPhoto(photo);
     }
@@ -337,18 +345,23 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             result.addOnSuccessListener(uri -> {
                 Log.v(MainActivity.TAG, "Tell me this shit - " + uri.toString());
                 String photoUri = uri.toString();
-                recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
-                        .addOnCompleteListener(task -> {
-                            if (task.isSuccessful()) {
-                                photosUri.add(0, photoUri);
-                                Log.v(MainActivity.TAG, "Photo URL was bound to record");
-                                progressBar.setVisibility(View.GONE);
-                                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-                            } else {
-                                Log.v(MainActivity.TAG, "Photo URL binding error");
-                            }
-                        });
-
+                if (action) {
+                    recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    photosUri.add(photoUri);
+                                    Log.v(MainActivity.TAG, "Photo URL was bound to record");
+                                    progressBar.setVisibility(View.GONE);
+                                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                                } else {
+                                    Log.v(MainActivity.TAG, "Photo URL binding error");
+                                }
+                            });
+                } else {
+                    photosUri.add(photoUri);
+                    progressBar.setVisibility(View.GONE);
+                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                }
             });
 
         }).addOnFailureListener(e -> {

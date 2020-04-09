@@ -9,7 +9,6 @@ import com.example.calendar.models.Record;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -61,6 +60,10 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, RecordActivity.class);
             intent.putExtra(RecordActivity.ACTION, RecordActivity.CREATE_NOTE);
+            Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+            if (fragment instanceof CalendarFragment) {
+                intent.putExtra(RecordActivity.CHOSE_DATE, ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
+            }
             startActivityForResult(intent, NEW_NOTE);
         });
     }
@@ -84,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
                 record.setNote_id(newRecordRef.getId());
                 record.setUser_id(user_id);
                 record.setDate((Date) data.getSerializableExtra(RecordActivity.DATE));
+                record.setPhotos(data.getStringArrayListExtra(RecordActivity.PHOTOS));
 
                 newRecordRef.set(record).addOnCompleteListener(task -> {
                    if (task.isSuccessful()) {
