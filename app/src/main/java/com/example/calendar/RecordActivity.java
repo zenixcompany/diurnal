@@ -279,26 +279,14 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     public void getChosenImage(Uri imagePath) {
         String imageName = createImageName();
 
-        Photo photo = new Photo(imageName, imagePath.toString());
-        Log.v(MainActivity.TAG, imagePath.toString());
-
-        isPhotoChanged = true;
-
         saveImageToFirebase(imagePath, imageName);
-        photosAdapter.addPhoto(photo);
     }
 
     @Override
     public void getTakenImage(File image) {
-        Log.v(MainActivity.TAG, Uri.fromFile(image).toString());
-
         String imageName = image.getName().substring(0, image.getName().lastIndexOf('.'));
-        Photo photo = new Photo(imageName, Uri.fromFile(image).toString());
-
-        isPhotoChanged = true;
 
         saveImageToFirebase(Uri.fromFile(image), imageName);
-        photosAdapter.addPhoto(photo);
     }
 
     private void verifyPermissions() {
@@ -350,24 +338,39 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         deleteDialog.setMessage(R.string.deletePhotoConfirmation);
 
         deleteDialog.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
-            recordsRef.document(recordId).update("photos", FieldValue.arrayRemove(photosAdapter
-                    .photos.get(position).getPhotoUrl()))
-                    .addOnCompleteListener(task -> {
-                        StorageReference storageRef = FirebaseStorage.getInstance()
-                                .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
-                        storageRef.delete().addOnSuccessListener(aVoid -> {
-                            Log.v(MainActivity.TAG, "Photo has been deleted successfully");
-                            photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
-                            photosAdapter.photos.remove(position);
-                            photosAdapter.notifyDataSetChanged();
+            if (action) {
+                recordsRef.document(recordId).update("photos", FieldValue.arrayRemove(photosAdapter
+                        .photos.get(position).getPhotoUrl()))
+                        .addOnCompleteListener(task -> {
+                            StorageReference storageRef = FirebaseStorage.getInstance()
+                                    .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
+                            storageRef.delete().addOnSuccessListener(aVoid -> {
+                                Log.v(MainActivity.TAG, "Photo has been deleted successfully");
+                                photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
+                                photosAdapter.photos.remove(position);
+                                photosAdapter.notifyDataSetChanged();
 
-                            isPhotoChanged = true;
+                                isPhotoChanged = true;
+                            }).addOnFailureListener(e -> {
+                                Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
+                            });
                         }).addOnFailureListener(e -> {
-                            Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
-                        });
-                    }).addOnFailureListener(e -> {
-                        Log.v(MainActivity.TAG, "Delete from array has been failed");
-                    });
+                    Log.v(MainActivity.TAG, "Delete from array has been failed");
+                });
+            } else {
+                StorageReference storageRef = FirebaseStorage.getInstance()
+                        .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
+                storageRef.delete().addOnSuccessListener(aVoid -> {
+                    Log.v(MainActivity.TAG, "Photo has been deleted successfully");
+                    photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
+                    photosAdapter.photos.remove(position);
+                    photosAdapter.notifyDataSetChanged();
+
+                    isPhotoChanged = photosUri.size() > 0;
+                }).addOnFailureListener(e -> {
+                    Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
+                });
+            }
         });
 
         deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
@@ -400,6 +403,10 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                                     Log.v(MainActivity.TAG, "Photo URL was bound to record");
                                     progressBar.setVisibility(View.GONE);
                                     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+
+                                    Photo photoObj = new Photo(photoName, photoUri);
+                                    photosAdapter.addPhoto(photoObj);
+                                    isPhotoChanged = true;
                                 } else {
                                     Log.v(MainActivity.TAG, "Photo URL binding error");
                                 }
@@ -408,6 +415,10 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                     photosUri.add(photoUri);
                     progressBar.setVisibility(View.GONE);
                     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+
+                    Photo photoObj = new Photo(photoName, photoUri);
+                    photosAdapter.addPhoto(photoObj);
+                    isPhotoChanged = true;
                 }
             });
 
