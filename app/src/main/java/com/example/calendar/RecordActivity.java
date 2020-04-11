@@ -66,7 +66,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     // false - CREATE_NOTE, true - EDIT_NOTE
     private boolean action = false;
     private boolean isEditing = false;
-    private boolean isPhotoAdded = false;
+    private boolean isPhotoChanged = false;
 
     private Intent intent;
 
@@ -208,14 +208,22 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
 
         photosAdapter = new PhotosAdapter(this, photos);
-        photosAdapter.setListener(position -> {
-            if (position == 0) {
-                verifyPermissions();
-                SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
-                selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+        photosAdapter.setListener(new PhotosAdapter.Listener() {
+            @Override
+            public void onClick(int position) {
+                if (position == 0) {
+                    verifyPermissions();
+                    SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
+                    selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                }
+            }
+
+            @Override
+            public void onDeleteImageClick(int position) {
+                confirmDeletePhotoDialog(position);
             }
         });
-        photosRecycler.setAdapter(photosAdapter);
+                photosRecycler.setAdapter(photosAdapter);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         photosRecycler.setLayoutManager(layoutManager);
@@ -235,6 +243,13 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     @Override
     public void onBackPressed() {
+        switch (progressBar.getVisibility()) {
+            case View.VISIBLE:
+                Log.v(MainActivity.TAG, "Visible");
+            case View.GONE:
+                Log.v(MainActivity.TAG, "Invisible");
+        }
+
         if (checkChanges()) {
             intent.putExtra(TITLE, titleView.getText().toString());
             intent.putExtra(RECORD, recordView.getText().toString());
@@ -245,7 +260,6 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             intent.putExtra(PHOTOS, photosUri);
             setResult(RESULT_OK, intent);
         }
-
         super.onBackPressed();
     }
 
@@ -268,7 +282,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         Photo photo = new Photo(imageName, imagePath.toString());
         Log.v(MainActivity.TAG, imagePath.toString());
 
-        isPhotoAdded = true;
+        isPhotoChanged = true;
 
         saveImageToFirebase(imagePath, imageName);
         photosAdapter.addPhoto(photo);
@@ -281,7 +295,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         String imageName = image.getName().substring(0, image.getName().lastIndexOf('.'));
         Photo photo = new Photo(imageName, Uri.fromFile(image).toString());
 
-        isPhotoAdded = true;
+        isPhotoChanged = true;
 
         saveImageToFirebase(Uri.fromFile(image), imageName);
         photosAdapter.addPhoto(photo);
@@ -313,17 +327,47 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         // true if changes exist
         return !title.contentEquals(titleView.getText().toString()) ||
                 !record.contentEquals(recordView.getText().toString()) ||
-                isPhotoAdded || newDate != null;
+                isPhotoChanged || newDate != null;
     }
 
     private void confirmDeleteDialog() {
         AlertDialog.Builder deleteDialog = new AlertDialog.Builder(this);
         deleteDialog.setMessage(R.string.deleteConfirmation);
-        deleteDialog.setCancelable(false);
 
         deleteDialog.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
             setResult(MainActivity.DELETE_NOTE, intent);
             finish();
+        });
+
+        deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
+        });
+
+        deleteDialog.create().show();
+    }
+
+    private void confirmDeletePhotoDialog(int position) {
+        AlertDialog.Builder deleteDialog = new AlertDialog.Builder(this);
+        deleteDialog.setMessage(R.string.deletePhotoConfirmation);
+
+        deleteDialog.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
+            recordsRef.document(recordId).update("photos", FieldValue.arrayRemove(photosAdapter
+                    .photos.get(position).getPhotoUrl()))
+                    .addOnCompleteListener(task -> {
+                        StorageReference storageRef = FirebaseStorage.getInstance()
+                                .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
+                        storageRef.delete().addOnSuccessListener(aVoid -> {
+                            Log.v(MainActivity.TAG, "Photo has been deleted successfully");
+                            photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
+                            photosAdapter.photos.remove(position);
+                            photosAdapter.notifyDataSetChanged();
+
+                            isPhotoChanged = true;
+                        }).addOnFailureListener(e -> {
+                            Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
+                        });
+                    }).addOnFailureListener(e -> {
+                        Log.v(MainActivity.TAG, "Delete from array has been failed");
+                    });
         });
 
         deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
@@ -338,6 +382,9 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         String userID = user.getUid();
 
         StorageReference storageReference = FirebaseStorage.getInstance().getReference().child("images/users/" + userID + "/" + photoName);
+        progressBar.setVisibility(View.VISIBLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
         storageReference.putFile(photo).addOnSuccessListener(taskSnapshot -> {
             Log.v(MainActivity.TAG, "Dopy");
 
@@ -367,9 +414,9 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         }).addOnFailureListener(e -> {
             Log.v(MainActivity.TAG, "Shitty");
         }).addOnProgressListener(taskSnapshot -> {
-            progressBar.setVisibility(View.VISIBLE);
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+            Log.v(MainActivity.TAG, "Progress" + progress);
+            progressBar.setProgress((int)progress);
         });
     }
 

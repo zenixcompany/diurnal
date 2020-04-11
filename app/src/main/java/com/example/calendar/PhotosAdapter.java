@@ -2,7 +2,9 @@ package com.example.calendar;
 
 import android.content.Context;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 
 import com.example.calendar.models.Photo;
@@ -17,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder> {
     private Context context;
-    private ArrayList<Photo> photos;
+    public ArrayList<Photo> photos;
 
     private Listener listener;
 
@@ -32,7 +34,10 @@ public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder
 
     public static interface Listener {
         public void onClick(int position);
+        public void onDeleteImageClick(int position);
     }
+
+
 
     public void setListener(Listener listener) {
         this.listener = listener;
@@ -57,19 +62,21 @@ public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder
         CardView cardView = holder.cardView;
 
         ImageView image = cardView.findViewById(R.id.photo);
+        ImageButton deleteImage = cardView.findViewById(R.id.photo_delete);
 
         if (position == 0) {
             image.setBackground(ResourcesCompat.getDrawable(context.getResources(), R.drawable.border, null));
             image.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.ic_add_a_photo_black_24dp, null));
+            deleteImage.setVisibility(View.GONE);
         }
         else{
             Picasso.with(context).load(photos.get(position).getPhotoUrl())
                     .resize(400, 400).centerInside().into(image);
         }
 
-        cardView.setOnClickListener(view -> {
-            listener.onClick(position);
-        });
+        deleteImage.setOnClickListener(view -> listener.onDeleteImageClick(position));
+
+        cardView.setOnClickListener(view -> listener.onClick(position));
     }
 
     @Override

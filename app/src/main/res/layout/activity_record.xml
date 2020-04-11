@@ -8,11 +8,14 @@
 
     <ProgressBar
         android:id="@+id/recordActivity_progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        style="?android:attr/progressBarStyle"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:progressDrawable="@drawable/circle"
         android:layout_centerInParent="true"
-        android:visibility="gone"/>
+        android:visibility="gone"
+        android:max="100"
+        android:progress="0"/>
 
     <include
         android:id="@+id/recordActivity_toolbar"
