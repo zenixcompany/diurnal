@@ -12,10 +12,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-
-import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.firebase.auth.AuthCredential;
@@ -53,6 +52,13 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        MyApplication.getInstance().setConnectivityListener(this::showInternetConnectionSnack);
+    }
+
     public void SignInGoogle() {
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, GOOGLE_SIGN_IN);
@@ -66,8 +72,6 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
 
-                        Log.d("TAG", "signInWithCredential:success");
-
                         FirebaseUser user = mAuth.getCurrentUser();
 
                         if (user != null) {
@@ -78,8 +82,8 @@ public class LoginActivity extends AppCompatActivity {
 
                         Log.w("TAG", "signInWithCredential:failure", task.getException());
 
-                        Toast.makeText(LoginActivity.this, "Authentication failed.",
-                                Toast.LENGTH_SHORT).show();
+                        Snackbar.make(findViewById(R.id.login_layout), getString(R.string.signInFailed),
+                                Snackbar.LENGTH_LONG).show();
                     }
                 });
     }
@@ -94,7 +98,9 @@ public class LoginActivity extends AppCompatActivity {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
                 if (account != null) firebaseAuthWithGoogle(account);
             } catch (ApiException e) {
-                Log.w("TAG", "Google sign in failed", e);
+                if (e.getStatusCode() == 7) {
+                    showInternetConnectionSnack(false);
+                }
             }
         }
     }
@@ -106,4 +112,16 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
+    private void showInternetConnectionSnack(boolean isConnected) {
+        String message;
+
+        if (isConnected) {
+            message = getString(R.string.internetConnectionSuccess);
+        }
+        else {
+            message = getString(R.string.internetConnectionFailed);
+        }
+
+        Snackbar.make(findViewById(R.id.login_layout), message, Snackbar.LENGTH_LONG).show();
+    }
 }

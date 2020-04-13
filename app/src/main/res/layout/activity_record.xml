@@ -32,6 +32,7 @@
         android:layout_margin="@dimen/editTextMargin"
         android:hint="@string/title"
         android:fontFamily="@font/roboto"
+        android:textColor="@color/edittext_disabled_colors"
         android:importantForAutofill="no" />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -52,6 +53,7 @@
         android:layout_margin="@dimen/editTextMargin"
         android:hint="@string/thought"
         android:fontFamily="@font/roboto"
+        android:textColor="@color/edittext_disabled_colors"
         android:inputType="textMultiLine"
         android:importantForAutofill="no" />
 

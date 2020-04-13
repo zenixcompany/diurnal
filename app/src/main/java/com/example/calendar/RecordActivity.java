@@ -36,6 +36,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -88,6 +89,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     private FirebaseFirestore db;
     private CollectionReference recordsRef;
+    private UploadTask uploadPhotoTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,9 +149,9 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
 
                 titleView.setInputType(InputType.TYPE_NULL);
-                titleView.setOnKeyListener((view, i, keyEvent) -> true);
+                titleView.setEnabled(false);
                 recordView.setInputType(InputType.TYPE_NULL);
-                recordView.setOnKeyListener((view, i, keyEvent) -> true);
+                recordView.setEnabled(false);
                 recordView.setSingleLine(false);
 
                 Drawable editDrawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
@@ -160,9 +162,9 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                 editDoneButton.setOnClickListener(view -> {
                     if (isEditing) {
                         titleView.setInputType(InputType.TYPE_NULL);
-                        titleView.setOnKeyListener((view1, i, keyEvent) -> true);
+                        titleView.setEnabled(false);
                         recordView.setInputType(InputType.TYPE_NULL);
-                        recordView.setOnKeyListener((view1, i, keyEvent) -> true);
+                        recordView.setEnabled(false);
                         recordView.setSingleLine(false);
 
                         Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
@@ -171,9 +173,9 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                         isEditing = false;
                     } else {
                         titleView.setInputType(InputType.TYPE_CLASS_TEXT);
-                        titleView.setOnKeyListener(null);
+                        titleView.setEnabled(true);
                         recordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-                        recordView.setOnKeyListener(null);
+                        recordView.setEnabled(true);
 
                         Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
                         editDoneButton.setImageDrawable(drawable);
@@ -198,7 +200,6 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
         photos.add(new Photo("Add a photo", "photo"));
         if (photosUri != null) {
-            Collections.reverse(photosUri);
             for (String photoUri : photosUri) {
                 photos.add(new Photo("dipa", photoUri));
             }
@@ -243,11 +244,12 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
 
     @Override
     public void onBackPressed() {
-        switch (progressBar.getVisibility()) {
-            case View.VISIBLE:
-                Log.v(MainActivity.TAG, "Visible");
-            case View.GONE:
-                Log.v(MainActivity.TAG, "Invisible");
+        if (progressBar.getVisibility() == View.VISIBLE) {
+            if (uploadPhotoTask.isInProgress()) {
+                uploadPhotoTask.pause();
+                confirmPhotoUploadCancel();
+            }
+            return;
         }
 
         if (checkChanges()) {
@@ -379,6 +381,23 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         deleteDialog.create().show();
     }
 
+    private void confirmPhotoUploadCancel() {
+        AlertDialog.Builder confirmDialog = new AlertDialog.Builder(this);
+        confirmDialog.setMessage(R.string.cancelUploadConfirmation);
+
+        confirmDialog.setPositiveButton(R.string.continueUploading, (dialogInterface, i) -> {
+            uploadPhotoTask.resume();
+        });
+
+        confirmDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
+            uploadPhotoTask.cancel();
+            progressBar.setVisibility(View.GONE);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        });
+
+        confirmDialog.create().show();
+    }
+
     private void saveImageToFirebase(Uri photo, String photoName) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
@@ -388,7 +407,8 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         progressBar.setVisibility(View.VISIBLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-        storageReference.putFile(photo).addOnSuccessListener(taskSnapshot -> {
+        uploadPhotoTask = storageReference.putFile(photo);
+        uploadPhotoTask.addOnSuccessListener(taskSnapshot -> {
             Log.v(MainActivity.TAG, "Dopy");
 
             Task<Uri> result = taskSnapshot.getMetadata().getReference().getDownloadUrl();
@@ -399,7 +419,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                     recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
                             .addOnCompleteListener(task -> {
                                 if (task.isSuccessful()) {
-                                    photosUri.add(photoUri);
+                                    photosUri.add(0, photoUri);
                                     Log.v(MainActivity.TAG, "Photo URL was bound to record");
                                     progressBar.setVisibility(View.GONE);
                                     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);

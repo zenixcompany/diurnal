@@ -12,11 +12,21 @@
     <string name="edit">Edit</string>
     <string name="done">Done</string>
     <string name="cancel">Cancel</string>
+    <string name="refresh">Refresh</string>
 
+    <string name="signInSuccess">Successful log in!</string>
+    <string name="signInFailed">Authentication failed.</string>
+
+    <string name="internetConnectionSuccess">Successful connectivity to the Internet!</string>
+    <string name="internetConnectionFailed">No Internet Connection. Please check your connectivity.</string>
+    
     <string name="delete">Delete</string>
     <string name="deleteConfirmation">Are you sure you want to delete this record?</string>
     <string name="delete_photo">Delete a photo</string>
     <string name="deletePhotoConfirmation">This photo will be deleted</string>
+
+    <string name="cancelUploadConfirmation">Photo is still uploading. Do you want to continue uploading?</string>
+    <string name="continueUploading">Continue</string>
 
     <string name="choose_take_photo">Choose or take a photo</string>
     <string name="choosePhoto">Choose photo from memory</string>

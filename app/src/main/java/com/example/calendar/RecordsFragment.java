@@ -16,6 +16,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 
 import androidx.fragment.app.Fragment;
@@ -33,7 +34,6 @@ public class RecordsFragment extends Fragment {
 
     private FirebaseFirestore db;
     private CollectionReference collectionReference;
-    private DocumentSnapshot lastQueriedDocument;
 
     public RecordsFragment() {
         // Required empty public constructor
@@ -77,16 +77,11 @@ public class RecordsFragment extends Fragment {
         collectionReference = db.collection("records");
 
         Query recordsQuery;
-        if (lastQueriedDocument != null) {
-            recordsQuery = collectionReference.whereEqualTo("user_id",
-                    Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
-                    .orderBy("date", Query.Direction.ASCENDING)
-                    .startAfter(lastQueriedDocument);
-        } else {
-            recordsQuery = collectionReference.whereEqualTo("user_id",
-                    Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
-                    .orderBy("date", Query.Direction.ASCENDING);
-        }
+
+        recordsQuery = collectionReference.whereEqualTo("user_id",
+                Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
+                .orderBy("date", Query.Direction.ASCENDING);
+
 
         recordsQuery.get().addOnCompleteListener(task -> {
            if (task.isSuccessful()) {
@@ -94,15 +89,9 @@ public class RecordsFragment extends Fragment {
 
                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                    Record record = documentSnapshot.toObject(Record.class);
+                   Collections.reverse(record.getPhotos());
                    recordsAdapter.addRecord(record);
                }
-
-               if (task.getResult().size() != 0) {
-                   lastQueriedDocument = task.getResult().getDocuments()
-                                        .get(task.getResult().size() - 1);
-               }
-
-                recordsAdapter.notifyDataSetChanged();
            } else {
                Log.v(MainActivity.TAG, "Some shitty problem happened");
            }

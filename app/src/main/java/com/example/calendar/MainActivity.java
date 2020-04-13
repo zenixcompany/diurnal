@@ -28,6 +28,7 @@ import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Objects;
 
@@ -97,8 +98,10 @@ public class MainActivity extends AppCompatActivity {
                        Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
 
                        if (fragment instanceof RecordsFragment) {
+                           Collections.reverse(record.getPhotos());
                             ((RecordsFragment) fragment).recordsAdapter.addRecord(record);
                        } else if (fragment instanceof CalendarFragment) {
+                           Collections.reverse(record.getPhotos());
                            ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
                                    ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
                            ((CalendarFragment) fragment).updateCalendarDots();
@@ -233,8 +236,20 @@ public class MainActivity extends AppCompatActivity {
                 }
                 changeFragments(month);
                 break;
+            case R.id.action_refresh:
+                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                if (fragment instanceof RecordsFragment) {
+                    ((RecordsFragment) fragment).recordsAdapter.clearRecords();
+                    ((RecordsFragment) fragment).getNotes();
+                }
+                else if (fragment instanceof CalendarFragment) {
+                    ((CalendarFragment) fragment).recordsAdapter.clearRecords();
+                    ((CalendarFragment) fragment).getNotes();
+                    ((CalendarFragment) fragment).updateCalendarDots();
+                }
+                break;
             case R.id.action_sign_out:
-                signIn();
+                signOut();
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -259,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void signIn() {
+    private void signOut() {
         FirebaseAuth.getInstance().signOut();
 
         Intent intent = new Intent(MainActivity.this, LoginActivity.class);

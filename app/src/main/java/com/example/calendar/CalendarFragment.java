@@ -19,6 +19,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Objects;
 
 import androidx.core.content.res.ResourcesCompat;
@@ -125,6 +126,7 @@ public class CalendarFragment extends Fragment {
 
                 for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                     Record record = documentSnapshot.toObject(Record.class);
+                    Collections.reverse(record.getPhotos());
                     recordsAdapter.addRecord(record);
 
                     Calendar calendar = Calendar.getInstance();

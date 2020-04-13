@@ -214,6 +214,13 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         notifyDataSetChanged();
     }
 
+    public void clearRecords() {
+        recordList.clear();
+        recordListForFilter.clear();
+
+        notifyDataSetChanged();
+    }
+
     public void filterByDate(Calendar calendar) {
         ArrayList<Record> recordListFiltered = new ArrayList<>();
         Calendar calendar1 = Calendar.getInstance();
@@ -232,6 +239,7 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         recordList.clear();
         recordList.addAll(recordListFiltered);
+        Collections.sort(recordList, sortByDate);
         notifyDataSetChanged();
     }
 

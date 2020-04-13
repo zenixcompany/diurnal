@@ -2,6 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/login_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/loginBackground"
@@ -19,7 +20,7 @@
 
     <TextView
         android:id="@+id/login_text"
-        android:layout_width="wrap_content"
+        android:layout_width="152dp"
         android:layout_height="wrap_content"
         android:layout_below="@+id/login_image"
         android:layout_centerHorizontal="true"

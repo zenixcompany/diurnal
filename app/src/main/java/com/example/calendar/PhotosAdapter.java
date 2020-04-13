@@ -1,6 +1,7 @@
 package com.example.calendar;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -64,8 +65,10 @@ public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder
         ImageView image = cardView.findViewById(R.id.photo);
         ImageButton deleteImage = cardView.findViewById(R.id.photo_delete);
 
-        if (position == 0) {
-            image.setBackground(ResourcesCompat.getDrawable(context.getResources(), R.drawable.border, null));
+        if (holder.getAdapterPosition() == 0) {
+            Log.v(MainActivity.TAG, "Photo position - " + holder.getAdapterPosition());
+            holder.setIsRecyclable(false);
+            image.setBackgroundResource(R.drawable.border);
             image.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.ic_add_a_photo_black_24dp, null));
             deleteImage.setVisibility(View.GONE);
         }
