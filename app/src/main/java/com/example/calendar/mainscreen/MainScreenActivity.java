@@ -1,12 +1,20 @@
-package com.example.calendar;
+package com.example.calendar.mainscreen;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
-import com.example.calendar.models.Record;
+import com.example.calendar.features.LoginActivity;
+import com.example.calendar.application.ConnectivityReceiver;
+import com.example.calendar.application.MyApplication;
+import com.example.calendar.R;
+import com.example.calendar.data.Record;
+import com.example.calendar.mainscreen.calendar.CalendarFragment;
+import com.example.calendar.mainscreen.records.RecordsFragment;
+import com.example.calendar.record.RecordActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -32,8 +40,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity {
-    public static final String TAG = MainActivity.class.getSimpleName();
+public class MainScreenActivity extends AppCompatActivity {
+    public static final String TAG = MainScreenActivity.class.getSimpleName();
 
     private MenuItem searchItem;
 
@@ -59,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
 
         FloatingActionButton fab = findViewById(R.id.main_fab);
         fab.setOnClickListener(view -> {
-            Intent intent = new Intent(MainActivity.this, RecordActivity.class);
+            Intent intent = new Intent(MainScreenActivity.this, RecordActivity.class);
             intent.putExtra(RecordActivity.ACTION, RecordActivity.CREATE_NOTE);
             Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
             if (fragment instanceof CalendarFragment) {
@@ -67,6 +75,16 @@ public class MainActivity extends AppCompatActivity {
             }
             startActivityForResult(intent, NEW_NOTE);
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        MyApplication.getInstance().setConnectivityListener(this::showInternetConnectionSnack);
+        if (!ConnectivityReceiver.isConnected()) {
+            showInternetConnectionSnack(ConnectivityReceiver.isConnected());
+        }
     }
 
     @Override
@@ -112,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
                    }
                 });
             }
-        } else if (requestCode == MainActivity.EDIT_NOTE) {
+        } else if (requestCode == MainScreenActivity.EDIT_NOTE) {
             String noteId;
             int position;
             ArrayList<String> photoURIs;
@@ -130,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 dR.update("title", title, "text", recordText,
                         "date", date).addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        Log.v(MainActivity.TAG, "Note has been updated");
+                        Log.v(MainScreenActivity.TAG, "Note has been updated");
                         Record record = new Record();
                         record.setTitle(title);
                         record.setText(recordText);
@@ -147,15 +165,15 @@ public class MainActivity extends AppCompatActivity {
                             ((CalendarFragment) fragment).updateCalendarDots();
                         }
                     } else {
-                        Log.v(MainActivity.TAG, "Note update has been failed");
+                        Log.v(MainScreenActivity.TAG, "Note update has been failed");
                     }
                 });
-            } else if (resultCode == MainActivity.DELETE_NOTE) {
+            } else if (resultCode == MainScreenActivity.DELETE_NOTE) {
                 noteId = data.getStringExtra(RecordActivity.NOTE_ID);
                 position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
                 photoURIs = data.getStringArrayListExtra(RecordActivity.PHOTOS);
 
-                Log.v(MainActivity.TAG, "DAMN, this shit works!");
+                Log.v(MainScreenActivity.TAG, "DAMN, this shit works!");
 
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -168,9 +186,9 @@ public class MainActivity extends AppCompatActivity {
                                         .getReferenceFromUrl(photoURI);
 
                                 storageRef.delete().addOnSuccessListener(aVoid -> {
-                                    Log.v(MainActivity.TAG, "Photo has been deleted successfully");
+                                    Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
                                 }).addOnFailureListener(e -> {
-                                    Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
+                                    Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
                                 });
                             }
                         }
@@ -277,9 +295,22 @@ public class MainActivity extends AppCompatActivity {
     private void signOut() {
         FirebaseAuth.getInstance().signOut();
 
-        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+        Intent intent = new Intent(MainScreenActivity.this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private void showInternetConnectionSnack(boolean isConnected) {
+        String message;
+
+        if (isConnected) {
+            message = getString(R.string.internetConnectionSuccess);
+            Snackbar.make(findViewById(R.id.main_layout), message, Snackbar.LENGTH_SHORT).show();
+        }
+        else {
+            message = getString(R.string.internetConnectionFailedRecords);
+            Snackbar.make(findViewById(R.id.main_layout), message, Snackbar.LENGTH_INDEFINITE).show();
+        }
     }
 }

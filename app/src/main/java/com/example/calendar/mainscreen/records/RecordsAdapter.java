@@ -1,4 +1,4 @@
-package com.example.calendar;
+package com.example.calendar.mainscreen.records;
 
 import android.graphics.Color;
 import android.util.Log;
@@ -8,7 +8,9 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
 
-import com.example.calendar.models.Record;
+import com.example.calendar.R;
+import com.example.calendar.data.Record;
+import com.example.calendar.mainscreen.MainScreenActivity;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -227,7 +229,7 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         for (Record record : recordListForFilter) {
             calendar1.setTime(record.getDate());
-            Log.v(MainActivity.TAG, calendar1.get(Calendar.YEAR) + " " +
+            Log.v(MainScreenActivity.TAG, calendar1.get(Calendar.YEAR) + " " +
                     calendar1.get(Calendar.MONTH) + " " +
                     calendar1.get(Calendar.DATE));
             if (calendar1.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&

@@ -1,4 +1,4 @@
-package com.example.calendar;
+package com.example.calendar.record;
 
 import android.app.Activity;
 import android.content.Context;
@@ -13,6 +13,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.calendar.R;
+import com.example.calendar.mainscreen.MainScreenActivity;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
@@ -21,7 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
-public class SelectPhotoDialog extends DialogFragment {
+public class RecordSelectPhotoDialog extends DialogFragment {
 
     private OnPhotoSelectedListener photoSelectedListener;
 
@@ -53,7 +56,7 @@ public class SelectPhotoDialog extends DialogFragment {
                 try {
                     photoFile = createImageFile();
                 } catch (IOException e) {
-                    Log.e(MainActivity.TAG, e.toString());
+                    Log.e(MainScreenActivity.TAG, e.toString());
                 }
 
                 if (photoFile != null) {
@@ -82,16 +85,16 @@ public class SelectPhotoDialog extends DialogFragment {
         }
         else if (requestCode == RecordActivity.REQUEST_TAKE_PHOTO) {
             if (resultCode == Activity.RESULT_OK) {
-                Log.v(MainActivity.TAG, "OK, COOOOL");
+                Log.v(MainScreenActivity.TAG, "OK, COOOOL");
                 if (photoFile != null) {
                     photoSelectedListener.getTakenImage(photoFile);
                 }
                 getDialog().dismiss();
             } else {
-                Log.v(MainActivity.TAG, "NOOT!");
+                Log.v(MainScreenActivity.TAG, "NOOT!");
                 if (photoFile != null) {
                     if (photoFile.delete())
-                        Log.v(MainActivity.TAG, "Canceled photo was deleted");
+                        Log.v(MainScreenActivity.TAG, "Canceled photo was deleted");
                 }
             }
         }
@@ -102,7 +105,7 @@ public class SelectPhotoDialog extends DialogFragment {
         try {
             photoSelectedListener = (OnPhotoSelectedListener) getActivity();
         } catch (ClassCastException e) {
-            Log.e(MainActivity.TAG, Objects.requireNonNull(e.getMessage()));
+            Log.e(MainScreenActivity.TAG, Objects.requireNonNull(e.getMessage()));
         }
 
         super.onAttach(context);
@@ -115,7 +118,7 @@ public class SelectPhotoDialog extends DialogFragment {
         File image = File.createTempFile(((RecordActivity) getActivity()).createImageName(), ".jpg", storageDir);
 
         currentPhotoPath = image.getAbsolutePath();
-        Log.v(MainActivity.TAG, currentPhotoPath);
+        Log.v(MainScreenActivity.TAG, currentPhotoPath);
         return image;
     }
 }

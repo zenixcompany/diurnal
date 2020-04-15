@@ -1,4 +1,4 @@
-package com.example.calendar;
+package com.example.calendar.mainscreen.calendar;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,7 +10,11 @@ import android.view.ViewGroup;
 
 import com.applandeo.materialcalendarview.CalendarView;
 import com.applandeo.materialcalendarview.EventDay;
-import com.example.calendar.models.Record;
+import com.example.calendar.R;
+import com.example.calendar.mainscreen.MainScreenActivity;
+import com.example.calendar.mainscreen.records.RecordsAdapter;
+import com.example.calendar.record.RecordActivity;
+import com.example.calendar.data.Record;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -66,7 +70,7 @@ public class CalendarFragment extends Fragment {
             intent.putExtra(RecordActivity.DATE, recordList.get(position).getDate());
             intent.putExtra(RecordActivity.PHOTOS, recordList.get(position).getPhotos());
 
-            getActivity().startActivityForResult(intent, MainActivity.EDIT_NOTE);
+            getActivity().startActivityForResult(intent, MainScreenActivity.EDIT_NOTE);
         });
 
         db = FirebaseFirestore.getInstance();
@@ -122,7 +126,7 @@ public class CalendarFragment extends Fragment {
 
         recordsQuery.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                Log.v(MainActivity.TAG, "Shit is being displayed");
+                Log.v(MainScreenActivity.TAG, "Shit is being displayed");
 
                 for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                     Record record = documentSnapshot.toObject(Record.class);
@@ -141,7 +145,7 @@ public class CalendarFragment extends Fragment {
                 calendarView.setEvents(events);
                 recordsAdapter.filterByDate(calendarView.getFirstSelectedDate());
             } else {
-                Log.v(MainActivity.TAG, "Some shitty problem happened");
+                Log.v(MainScreenActivity.TAG, "Some shitty problem happened");
             }
         });
     }

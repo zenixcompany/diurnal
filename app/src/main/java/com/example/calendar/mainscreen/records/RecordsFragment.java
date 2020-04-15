@@ -1,4 +1,4 @@
-package com.example.calendar;
+package com.example.calendar.mainscreen.records;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,10 +7,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.example.calendar.models.Record;
+import com.example.calendar.R;
+import com.example.calendar.mainscreen.MainScreenActivity;
+import com.example.calendar.mainscreen.records.RecordsAdapter;
+import com.example.calendar.record.RecordActivity;
+import com.example.calendar.data.Record;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -60,7 +63,7 @@ public class RecordsFragment extends Fragment {
             intent.putExtra(RecordActivity.DATE, recordsList.get(position).getDate());
             intent.putExtra(RecordActivity.PHOTOS, recordsList.get(position).getPhotos());
 
-            getActivity().startActivityForResult(intent, MainActivity.EDIT_NOTE);
+            getActivity().startActivityForResult(intent, MainScreenActivity.EDIT_NOTE);
         });
         recordsRecycler.setAdapter(recordsAdapter);
 
@@ -85,7 +88,7 @@ public class RecordsFragment extends Fragment {
 
         recordsQuery.get().addOnCompleteListener(task -> {
            if (task.isSuccessful()) {
-               Log.v(MainActivity.TAG, "Shit is being displayed");
+               Log.v(MainScreenActivity.TAG, "Shit is being displayed");
 
                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                    Record record = documentSnapshot.toObject(Record.class);
@@ -93,7 +96,7 @@ public class RecordsFragment extends Fragment {
                    recordsAdapter.addRecord(record);
                }
            } else {
-               Log.v(MainActivity.TAG, "Some shitty problem happened");
+               Log.v(MainScreenActivity.TAG, "Some shitty problem happened");
            }
         });
     }

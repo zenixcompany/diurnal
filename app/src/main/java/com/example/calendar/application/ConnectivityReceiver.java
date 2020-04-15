@@ -1,6 +1,5 @@
-package com.example.calendar;
+package com.example.calendar.application;
 
-import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -8,10 +7,9 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
-import android.net.NetworkRequest;
 import android.os.Build;
 
-import androidx.annotation.NonNull;
+import com.example.calendar.application.MyApplication;
 
 public class ConnectivityReceiver extends BroadcastReceiver {
     public static ConnectivityReceiverListener receiverListener;
@@ -67,7 +65,7 @@ public class ConnectivityReceiver extends BroadcastReceiver {
         else {
             assert connectivityManager != null;
             NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-            return  networkInfo != null && networkInfo.isConnectedOrConnecting();
+            return networkInfo != null && networkInfo.isConnectedOrConnecting();
         }
     }
 }

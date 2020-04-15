@@ -1,4 +1,4 @@
-package com.example.calendar;
+package com.example.calendar.record;
 
 import android.Manifest;
 import android.app.DatePickerDialog;
@@ -27,8 +27,12 @@ import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 
-import com.example.calendar.models.Photo;
+import com.example.calendar.application.ConnectivityReceiver;
+import com.example.calendar.mainscreen.MainScreenActivity;
+import com.example.calendar.R;
+import com.example.calendar.data.Photo;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
@@ -42,11 +46,10 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 
-public class RecordActivity extends AppCompatActivity implements SelectPhotoDialog.OnPhotoSelectedListener,
+public class RecordActivity extends AppCompatActivity implements RecordSelectPhotoDialog.OnPhotoSelectedListener,
                                                                     DatePickerDialog.OnDateSetListener{
     public static final int REQUEST_PERMISSIONS = 299;
     public static final int REQUEST_TAKE_PHOTO = 300;
@@ -85,7 +88,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
     private Date newDate;
     private ArrayList<String> photosUri;
 
-    private PhotosAdapter photosAdapter;
+    private RecordPhotosAdapter photosAdapter;
 
     private FirebaseFirestore db;
     private CollectionReference recordsRef;
@@ -208,14 +211,20 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         }
 
 
-        photosAdapter = new PhotosAdapter(this, photos);
-        photosAdapter.setListener(new PhotosAdapter.Listener() {
+        photosAdapter = new RecordPhotosAdapter(this, photos);
+        photosAdapter.setListener(new RecordPhotosAdapter.Listener() {
             @Override
             public void onClick(int position) {
                 if (position == 0) {
                     verifyPermissions();
-                    SelectPhotoDialog selectPhotoDialog = new SelectPhotoDialog();
-                    selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                    if (ConnectivityReceiver.isConnected()) {
+                        RecordSelectPhotoDialog selectPhotoDialog = new RecordSelectPhotoDialog();
+                        selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                    } else {
+                        Snackbar.make(findViewById(R.id.recordActivity_layout),
+                                getString(R.string.internetConnectionFailedPhoto), Snackbar.LENGTH_LONG)
+                                .show();
+                    }
                 }
             }
 
@@ -325,7 +334,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
         deleteDialog.setMessage(R.string.deleteConfirmation);
 
         deleteDialog.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
-            setResult(MainActivity.DELETE_NOTE, intent);
+            setResult(MainScreenActivity.DELETE_NOTE, intent);
             finish();
         });
 
@@ -347,30 +356,30 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                             StorageReference storageRef = FirebaseStorage.getInstance()
                                     .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
                             storageRef.delete().addOnSuccessListener(aVoid -> {
-                                Log.v(MainActivity.TAG, "Photo has been deleted successfully");
+                                Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
                                 photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
                                 photosAdapter.photos.remove(position);
                                 photosAdapter.notifyDataSetChanged();
 
                                 isPhotoChanged = true;
                             }).addOnFailureListener(e -> {
-                                Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
+                                Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
                             });
                         }).addOnFailureListener(e -> {
-                    Log.v(MainActivity.TAG, "Delete from array has been failed");
+                    Log.v(MainScreenActivity.TAG, "Delete from array has been failed");
                 });
             } else {
                 StorageReference storageRef = FirebaseStorage.getInstance()
                         .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
                 storageRef.delete().addOnSuccessListener(aVoid -> {
-                    Log.v(MainActivity.TAG, "Photo has been deleted successfully");
+                    Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
                     photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
                     photosAdapter.photos.remove(position);
                     photosAdapter.notifyDataSetChanged();
 
                     isPhotoChanged = photosUri.size() > 0;
                 }).addOnFailureListener(e -> {
-                    Log.v(MainActivity.TAG, "Photo has not been deleted, error: " + e);
+                    Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
                 });
             }
         });
@@ -409,18 +418,18 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
         uploadPhotoTask = storageReference.putFile(photo);
         uploadPhotoTask.addOnSuccessListener(taskSnapshot -> {
-            Log.v(MainActivity.TAG, "Dopy");
+            Log.v(MainScreenActivity.TAG, "Dopy");
 
             Task<Uri> result = taskSnapshot.getMetadata().getReference().getDownloadUrl();
             result.addOnSuccessListener(uri -> {
-                Log.v(MainActivity.TAG, "Tell me this shit - " + uri.toString());
+                Log.v(MainScreenActivity.TAG, "Tell me this shit - " + uri.toString());
                 String photoUri = uri.toString();
                 if (action) {
                     recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
                             .addOnCompleteListener(task -> {
                                 if (task.isSuccessful()) {
                                     photosUri.add(0, photoUri);
-                                    Log.v(MainActivity.TAG, "Photo URL was bound to record");
+                                    Log.v(MainScreenActivity.TAG, "Photo URL was bound to record");
                                     progressBar.setVisibility(View.GONE);
                                     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
 
@@ -428,7 +437,7 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
                                     photosAdapter.addPhoto(photoObj);
                                     isPhotoChanged = true;
                                 } else {
-                                    Log.v(MainActivity.TAG, "Photo URL binding error");
+                                    Log.v(MainScreenActivity.TAG, "Photo URL binding error");
                                 }
                             });
                 } else {
@@ -443,10 +452,10 @@ public class RecordActivity extends AppCompatActivity implements SelectPhotoDial
             });
 
         }).addOnFailureListener(e -> {
-            Log.v(MainActivity.TAG, "Shitty");
+            Log.v(MainScreenActivity.TAG, "Shitty");
         }).addOnProgressListener(taskSnapshot -> {
             double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
-            Log.v(MainActivity.TAG, "Progress" + progress);
+            Log.v(MainScreenActivity.TAG, "Progress" + progress);
             progressBar.setProgress((int)progress);
         });
     }

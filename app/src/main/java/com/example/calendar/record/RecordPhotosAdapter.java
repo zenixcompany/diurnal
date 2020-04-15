@@ -1,4 +1,4 @@
-package com.example.calendar;
+package com.example.calendar.record;
 
 import android.content.Context;
 import android.util.Log;
@@ -8,7 +8,9 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
-import com.example.calendar.models.Photo;
+import com.example.calendar.R;
+import com.example.calendar.mainscreen.MainScreenActivity;
+import com.example.calendar.data.Photo;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -18,7 +20,7 @@ import androidx.cardview.widget.CardView;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder> {
+public class RecordPhotosAdapter extends RecyclerView.Adapter<RecordPhotosAdapter.ViewHolder> {
     private Context context;
     public ArrayList<Photo> photos;
 
@@ -44,7 +46,7 @@ public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder
         this.listener = listener;
     }
 
-    public PhotosAdapter(Context context, ArrayList<Photo> photos) {
+    public RecordPhotosAdapter(Context context, ArrayList<Photo> photos) {
         this.context = context;
         this.photos = photos;
     }
@@ -66,7 +68,7 @@ public class PhotosAdapter extends RecyclerView.Adapter<PhotosAdapter.ViewHolder
         ImageButton deleteImage = cardView.findViewById(R.id.photo_delete);
 
         if (holder.getAdapterPosition() == 0) {
-            Log.v(MainActivity.TAG, "Photo position - " + holder.getAdapterPosition());
+            Log.v(MainScreenActivity.TAG, "Photo position - " + holder.getAdapterPosition());
             holder.setIsRecyclable(false);
             image.setBackgroundResource(R.drawable.border);
             image.setImageDrawable(ResourcesCompat.getDrawable(context.getResources(), R.drawable.ic_add_a_photo_black_24dp, null));

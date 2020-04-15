@@ -1,4 +1,4 @@
-package com.example.calendar.models;
+package com.example.calendar.data;
 
 public class Photo {
     private String photoName;
