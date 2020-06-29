@@ -51,6 +51,7 @@ import java.util.Locale;
 
 public class RecordActivity extends AppCompatActivity implements RecordSelectPhotoDialog.OnPhotoSelectedListener,
                                                                     DatePickerDialog.OnDateSetListener{
+    // Constants
     public static final int REQUEST_PERMISSIONS = 299;
     public static final int REQUEST_TAKE_PHOTO = 300;
     public static final int REQUEST_CHOOSE_PHOTO = 301;
@@ -67,19 +68,22 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     public static final String NOTE_POSITION = "NOTE_POSITION";
     public static final String PHOTOS = "PHOTOS";
 
-    // false - CREATE_NOTE, true - EDIT_NOTE
-    private boolean action = false;
-    private boolean isEditing = false;
-    private boolean isPhotoChanged = false;
-
-    private Intent intent;
-
+    // UI
+    private RecyclerView photosRecycler;
     private ProgressBar progressBar;
     private ImageButton deleteButton;
     private ImageButton editDoneButton;
     private Button calendarPicker;
     private EditText titleView;
     private EditText recordView;
+
+    // Variables
+    // false - CREATE_NOTE, true - EDIT_NOTE
+    private boolean action = false;
+    private boolean isEditing = false;
+    private boolean isPhotoChanged = false;
+
+    private Intent intent;
 
     private String title;
     private String record;
@@ -107,7 +111,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         deleteButton = findViewById(R.id.recordActivity_delete);
         calendarPicker = findViewById(R.id.recordActivity_date);
 
-        RecyclerView photosRecycler = findViewById(R.id.recordActivity_photos_recycler);
+        photosRecycler = findViewById(R.id.recordActivity_photos_recycler);
 
         intent = getIntent();
         if (intent.getExtras() != null) {
@@ -119,124 +123,16 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             calendarPicker.setOnClickListener(view -> showDatePickerDialog());
 
             if (actionStr.contentEquals(CREATE_NOTE)) {
-                action = false;
-
-                if (choseCalendar != null) {
-                    calendar.set(Calendar.YEAR, choseCalendar.get(Calendar.YEAR));
-                    calendar.set(Calendar.MONTH, choseCalendar.get(Calendar.MONTH));
-                    calendar.set(Calendar.DAY_OF_MONTH, choseCalendar.get(Calendar.DAY_OF_MONTH));
-                }
-
-                String date = calendar.get(Calendar.MONTH)+1 + "/" +
-                        calendar.get(Calendar.DAY_OF_MONTH) + "/" +
-                        calendar.get(Calendar.YEAR);
-                calendarPicker.setText(date);
-                noteDate = calendar.getTime();
-
-                editDoneButton.setVisibility(View.GONE);
-                deleteButton.setVisibility(View.GONE);
-
+                setUpNoteCreating(choseCalendar, calendar);
             } else if (actionStr.contentEquals(EDIT_NOTE)) {
-                action = true;
-                calendar.setTime(noteDate);
-
-                String date = calendar.get(Calendar.MONTH)+1 + "/" +
-                        calendar.get(Calendar.DAY_OF_MONTH) + "/" +
-                        calendar.get(Calendar.YEAR);
-                calendarPicker.setText(date);
-
-                recordId = getIntent().getStringExtra(NOTE_ID);
-
-                titleView.setText(intent.getStringExtra(TITLE));
-                recordView.setText(intent.getStringExtra(RECORD));
-
-
-                titleView.setInputType(InputType.TYPE_NULL);
-                titleView.setEnabled(false);
-                recordView.setInputType(InputType.TYPE_NULL);
-                recordView.setEnabled(false);
-                recordView.setSingleLine(false);
-
-                Drawable editDrawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
-                editDoneButton.setImageDrawable(editDrawable);
-
-                isEditing = false;
-
-                editDoneButton.setOnClickListener(view -> {
-                    if (isEditing) {
-                        titleView.setInputType(InputType.TYPE_NULL);
-                        titleView.setEnabled(false);
-                        recordView.setInputType(InputType.TYPE_NULL);
-                        recordView.setEnabled(false);
-                        recordView.setSingleLine(false);
-
-                        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
-                        editDoneButton.setImageDrawable(drawable);
-
-                        isEditing = false;
-                    } else {
-                        titleView.setInputType(InputType.TYPE_CLASS_TEXT);
-                        titleView.setEnabled(true);
-                        recordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-                        recordView.setEnabled(true);
-
-                        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
-                        editDoneButton.setImageDrawable(drawable);
-
-                        isEditing = true;
-                    }
-                });
-
-                deleteButton.setOnClickListener(view -> confirmDeleteDialog());
-
-                photosUri = getIntent().getStringArrayListExtra(PHOTOS);
+                setUpNoteEditing(calendar);
             }
         }
 
         title = titleView.getText().toString();
         record = recordView.getText().toString();
-        title = titleView.getText().toString();
-        record = recordView.getText().toString();
 
-        ArrayList<Photo> photos = new ArrayList<>();
-
-
-        photos.add(new Photo("Add a photo", "photo"));
-        if (photosUri != null) {
-            for (String photoUri : photosUri) {
-                photos.add(new Photo("dipa", photoUri));
-            }
-        } else {
-            photosUri = new ArrayList<>();
-        }
-
-
-        photosAdapter = new RecordPhotosAdapter(this, photos);
-        photosAdapter.setListener(new RecordPhotosAdapter.Listener() {
-            @Override
-            public void onClick(int position) {
-                if (position == 0) {
-                    verifyPermissions();
-                    if (ConnectivityReceiver.isConnected()) {
-                        RecordSelectPhotoDialog selectPhotoDialog = new RecordSelectPhotoDialog();
-                        selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
-                    } else {
-                        Snackbar.make(findViewById(R.id.recordActivity_layout),
-                                getString(R.string.internetConnectionFailedPhoto), Snackbar.LENGTH_LONG)
-                                .show();
-                    }
-                }
-            }
-
-            @Override
-            public void onDeleteImageClick(int position) {
-                confirmDeletePhotoDialog(position);
-            }
-        });
-                photosRecycler.setAdapter(photosAdapter);
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-        photosRecycler.setLayoutManager(layoutManager);
+        setUpPhotoRecycler();
 
         db = FirebaseFirestore.getInstance();
         recordsRef = db.collection("records");
@@ -278,6 +174,124 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
+    }
+
+    private void setUpNoteCreating(Calendar choseCalendar, Calendar calendar) {
+        action = false;
+
+        if (choseCalendar != null) {
+            calendar.set(Calendar.YEAR, choseCalendar.get(Calendar.YEAR));
+            calendar.set(Calendar.MONTH, choseCalendar.get(Calendar.MONTH));
+            calendar.set(Calendar.DAY_OF_MONTH, choseCalendar.get(Calendar.DAY_OF_MONTH));
+        }
+
+        String date = calendar.get(Calendar.MONTH)+1 + "/" +
+                calendar.get(Calendar.DAY_OF_MONTH) + "/" +
+                calendar.get(Calendar.YEAR);
+        calendarPicker.setText(date);
+        noteDate = calendar.getTime();
+
+        editDoneButton.setVisibility(View.GONE);
+        deleteButton.setVisibility(View.GONE);
+    }
+
+    private void setUpNoteEditing(Calendar calendar) {
+        action = true;
+        calendar.setTime(noteDate);
+
+        String date = calendar.get(Calendar.MONTH)+1 + "/" +
+                calendar.get(Calendar.DAY_OF_MONTH) + "/" +
+                calendar.get(Calendar.YEAR);
+        calendarPicker.setText(date);
+
+        recordId = getIntent().getStringExtra(NOTE_ID);
+
+        titleView.setText(intent.getStringExtra(TITLE));
+        recordView.setText(intent.getStringExtra(RECORD));
+
+        disableEditing();
+
+        Drawable editDrawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
+        editDoneButton.setImageDrawable(editDrawable);
+
+        isEditing = false;
+
+        editDoneButton.setOnClickListener(view -> {
+            if (isEditing) {
+                disableEditing();
+            } else {
+                enableEditing();
+            }
+        });
+
+        deleteButton.setOnClickListener(view -> confirmDeleteDialog());
+
+        photosUri = getIntent().getStringArrayListExtra(PHOTOS);
+    }
+
+    private void enableEditing() {
+        titleView.setInputType(InputType.TYPE_CLASS_TEXT);
+        titleView.setEnabled(true);
+        recordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        recordView.setEnabled(true);
+
+        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
+        editDoneButton.setImageDrawable(drawable);
+
+        isEditing = true;
+    }
+
+    private void disableEditing() {
+        titleView.setInputType(InputType.TYPE_NULL);
+        titleView.setEnabled(false);
+        recordView.setInputType(InputType.TYPE_NULL);
+        recordView.setEnabled(false);
+        recordView.setSingleLine(false);
+
+        Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
+        editDoneButton.setImageDrawable(drawable);
+
+        isEditing = false;
+    }
+
+    private void setUpPhotoRecycler() {
+        ArrayList<Photo> photos = new ArrayList<>();
+
+        photos.add(new Photo("Add a photo", "photo"));
+        if (photosUri != null) {
+            for (String photoUri : photosUri) {
+                photos.add(new Photo("dipa", photoUri));
+            }
+        } else {
+            photosUri = new ArrayList<>();
+        }
+
+        photosAdapter = new RecordPhotosAdapter(this, photos);
+        photosAdapter.setListener(new RecordPhotosAdapter.Listener() {
+            @Override
+            public void onClick(int position) {
+                if (position == 0) {
+                    verifyPermissions();
+                    if (ConnectivityReceiver.isConnected()) {
+                        RecordSelectPhotoDialog selectPhotoDialog = new RecordSelectPhotoDialog();
+                        selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                    } else {
+                        Snackbar.make(findViewById(R.id.recordActivity_layout),
+                                getString(R.string.internetConnectionFailedPhoto), Snackbar.LENGTH_LONG)
+                                .show();
+                    }
+                }
+            }
+
+            @Override
+            public void onDeleteImageClick(int position) {
+                confirmDeletePhotoDialog(position);
+            }
+        });
+        photosRecycler.setAdapter(photosAdapter);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        photosRecycler.setLayoutManager(layoutManager);
     }
 
     public String createImageName() {

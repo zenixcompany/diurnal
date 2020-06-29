@@ -67,13 +67,10 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         }
     };
 
-    private Comparator<Record> sortByDate = new Comparator<Record>() {
-        @Override
-        public int compare(Record record, Record t1) {
-            if (record.getDate().getTime() < t1.getDate().getTime()) return 1;
-            else if (record.getDate().getTime() > t1.getDate().getTime()) return -1;
-            else return 0;
-        }
+    private Comparator<Record> sortByDate = (record, t1) -> {
+        if (record.getDate().getTime() < t1.getDate().getTime()) return 1;
+        else if (record.getDate().getTime() > t1.getDate().getTime()) return -1;
+        else return 0;
     };
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

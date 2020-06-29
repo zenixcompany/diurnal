@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/loginBackground"
+    android:gravity="center"
     tools:context=".features.LoginActivity">
 
     <ImageView
@@ -14,7 +15,6 @@
         android:id="@+id/login_image"
         android:layout_centerHorizontal="true"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="187dp"
         app:srcCompat="@drawable/logo"
         android:contentDescription="@string/app_name"/>
 

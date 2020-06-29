@@ -9,8 +9,6 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
 
-import com.example.calendar.application.MyApplication;
-
 public class ConnectivityReceiver extends BroadcastReceiver {
     public static ConnectivityReceiverListener receiverListener;
 
