@@ -33,6 +33,8 @@
     <string name="choose_take_photo">Choose or take a photo</string>
     <string name="choosePhoto">Choose photo from memory</string>
     <string name="takePhoto">Take a photo</string>
+    <string name="permissionStorageDenied">You should allow storage permissions to add an image.</string>
+    <string name="permissionCameraDenied">You should allow camera permissions to take an image.</string>
 
     <string name="thought">Describe your thoughts</string>
 

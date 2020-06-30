@@ -1,6 +1,5 @@
 package com.example.calendar.record;
 
-import android.Manifest;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
@@ -12,16 +11,13 @@ import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
-import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.util.Log;
 import android.widget.ImageButton;
@@ -52,9 +48,6 @@ import java.util.Locale;
 public class RecordActivity extends AppCompatActivity implements RecordSelectPhotoDialog.OnPhotoSelectedListener,
                                                                     DatePickerDialog.OnDateSetListener{
     // Constants
-    public static final int REQUEST_PERMISSIONS = 299;
-    public static final int REQUEST_TAKE_PHOTO = 300;
-    public static final int REQUEST_CHOOSE_PHOTO = 301;
 
     public static final String ACTION = "ACTION";
     public static final String CREATE_NOTE = "CREATE_NOTE";
@@ -271,15 +264,14 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             @Override
             public void onClick(int position) {
                 if (position == 0) {
-                    verifyPermissions();
-                    if (ConnectivityReceiver.isConnected()) {
-                        RecordSelectPhotoDialog selectPhotoDialog = new RecordSelectPhotoDialog();
-                        selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
-                    } else {
-                        Snackbar.make(findViewById(R.id.recordActivity_layout),
-                                getString(R.string.internetConnectionFailedPhoto), Snackbar.LENGTH_LONG)
-                                .show();
-                    }
+                        if (ConnectivityReceiver.isConnected()) {
+                            RecordSelectPhotoDialog selectPhotoDialog = new RecordSelectPhotoDialog();
+                            selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                        } else {
+                            Snackbar.make(findViewById(R.id.recordActivity_layout),
+                                    getString(R.string.internetConnectionFailedPhoto), Snackbar.LENGTH_LONG)
+                                    .show();
+                        }
                 }
             }
 
@@ -304,36 +296,14 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     public void getChosenImage(Uri imagePath) {
         String imageName = createImageName();
 
-        saveImageToFirebase(imagePath, imageName);
+        savePhotoToStorage(imagePath, imageName);
     }
 
     @Override
     public void getTakenImage(File image) {
         String imageName = image.getName().substring(0, image.getName().lastIndexOf('.'));
 
-        saveImageToFirebase(Uri.fromFile(image), imageName);
-    }
-
-    private void verifyPermissions() {
-        String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.CAMERA};
-
-        if (ContextCompat.checkSelfPermission(getApplicationContext(),
-                permissions[0]) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(getApplicationContext(),
-                        permissions[1]) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(getApplicationContext(),
-                        permissions[2]) == PackageManager.PERMISSION_GRANTED) {
-
-        } else {
-            ActivityCompat.requestPermissions(this, permissions, REQUEST_PERMISSIONS);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        verifyPermissions();
+        savePhotoToStorage(Uri.fromFile(image), imageName);
     }
 
     private boolean checkChanges() {
@@ -367,34 +337,12 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
                 recordsRef.document(recordId).update("photos", FieldValue.arrayRemove(photosAdapter
                         .photos.get(position).getPhotoUrl()))
                         .addOnCompleteListener(task -> {
-                            StorageReference storageRef = FirebaseStorage.getInstance()
-                                    .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
-                            storageRef.delete().addOnSuccessListener(aVoid -> {
-                                Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
-                                photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
-                                photosAdapter.photos.remove(position);
-                                photosAdapter.notifyDataSetChanged();
-
-                                isPhotoChanged = true;
-                            }).addOnFailureListener(e -> {
-                                Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
-                            });
+                            deletePhotoFromStorage(position);
                         }).addOnFailureListener(e -> {
                     Log.v(MainScreenActivity.TAG, "Delete from array has been failed");
                 });
             } else {
-                StorageReference storageRef = FirebaseStorage.getInstance()
-                        .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
-                storageRef.delete().addOnSuccessListener(aVoid -> {
-                    Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
-                    photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
-                    photosAdapter.photos.remove(position);
-                    photosAdapter.notifyDataSetChanged();
-
-                    isPhotoChanged = photosUri.size() > 0;
-                }).addOnFailureListener(e -> {
-                    Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
-                });
+                deletePhotoFromStorage(position);
             }
         });
 
@@ -402,6 +350,42 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         });
 
         deleteDialog.create().show();
+    }
+
+    private void deletePhotoFromStorage(int position) {
+        StorageReference storageRef = FirebaseStorage.getInstance()
+                .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
+        storageRef.delete().addOnSuccessListener(aVoid -> {
+            Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
+            photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
+            photosAdapter.photos.remove(position);
+            photosAdapter.notifyDataSetChanged();
+
+            if (action) {
+                isPhotoChanged = true;
+            } else {
+                isPhotoChanged = photosUri.size() > 0;
+            }
+        }).addOnFailureListener(e -> {
+            Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
+        });
+    }
+
+    private void addPhotoUriToDatabase(String photoName, String photoUri) {
+        recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        photosUri.add(0, photoUri);
+                        Log.v(MainScreenActivity.TAG, "Photo URL was bound to record");
+                        hideProgressBar();
+
+                        Photo photoObj = new Photo(photoName, photoUri);
+                        photosAdapter.addPhoto(photoObj);
+                        isPhotoChanged = true;
+                    } else {
+                        Log.v(MainScreenActivity.TAG, "Photo URL binding error");
+                    }
+                });
     }
 
     private void confirmPhotoUploadCancel() {
@@ -414,53 +398,37 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
         confirmDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
             uploadPhotoTask.cancel();
-            progressBar.setVisibility(View.GONE);
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            hideProgressBar();
         });
 
         confirmDialog.create().show();
     }
 
-    private void saveImageToFirebase(Uri photo, String photoName) {
+    private void savePhotoToStorage(Uri photo, String photoName) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         String userID = user.getUid();
 
-        StorageReference storageReference = FirebaseStorage.getInstance().getReference().child("images/users/" + userID + "/" + photoName);
-        progressBar.setVisibility(View.VISIBLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        StorageReference storageReference = FirebaseStorage.getInstance().getReference()
+                .child("images/users/" + userID + "/" + photoName);
+        showProgressBar();
         uploadPhotoTask = storageReference.putFile(photo);
         uploadPhotoTask.addOnSuccessListener(taskSnapshot -> {
             Log.v(MainScreenActivity.TAG, "Dopy");
-
             Task<Uri> result = taskSnapshot.getMetadata().getReference().getDownloadUrl();
             result.addOnSuccessListener(uri -> {
                 Log.v(MainScreenActivity.TAG, "Tell me this shit - " + uri.toString());
                 String photoUri = uri.toString();
                 if (action) {
-                    recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
-                            .addOnCompleteListener(task -> {
-                                if (task.isSuccessful()) {
-                                    photosUri.add(0, photoUri);
-                                    Log.v(MainScreenActivity.TAG, "Photo URL was bound to record");
-                                    progressBar.setVisibility(View.GONE);
-                                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-
-                                    Photo photoObj = new Photo(photoName, photoUri);
-                                    photosAdapter.addPhoto(photoObj);
-                                    isPhotoChanged = true;
-                                } else {
-                                    Log.v(MainScreenActivity.TAG, "Photo URL binding error");
-                                }
-                            });
+                    addPhotoUriToDatabase(photoName, photoUri);
                 } else {
                     photosUri.add(photoUri);
-                    progressBar.setVisibility(View.GONE);
-                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+
+                    hideProgressBar();
 
                     Photo photoObj = new Photo(photoName, photoUri);
                     photosAdapter.addPhoto(photoObj);
+
                     isPhotoChanged = true;
                 }
             });
@@ -472,6 +440,17 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             Log.v(MainScreenActivity.TAG, "Progress" + progress);
             progressBar.setProgress((int)progress);
         });
+    }
+
+    private void showProgressBar() {
+        progressBar.setVisibility(View.VISIBLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+    }
+
+    private void hideProgressBar() {
+        progressBar.setVisibility(View.GONE);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
     }
 
     private void showDatePickerDialog() {

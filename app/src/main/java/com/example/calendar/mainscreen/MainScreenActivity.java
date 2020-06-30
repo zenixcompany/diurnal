@@ -41,15 +41,20 @@ import java.util.Date;
 import java.util.Objects;
 
 public class MainScreenActivity extends AppCompatActivity {
+    // Constants
     public static final String TAG = MainScreenActivity.class.getSimpleName();
-
-    private MenuItem searchItem;
-
-    private boolean month = false;
 
     public static int NEW_NOTE = 556;
     public static int EDIT_NOTE = 557;
     public static int DELETE_NOTE = 558;
+
+    // UI
+    private MenuItem searchItem;
+
+    // Variables
+    private boolean month = false;
+
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +80,8 @@ public class MainScreenActivity extends AppCompatActivity {
             }
             startActivityForResult(intent, NEW_NOTE);
         });
+
+        db = FirebaseFirestore.getInstance();
     }
 
     @Override
@@ -96,39 +103,16 @@ public class MainScreenActivity extends AppCompatActivity {
                 Log.v(TAG, data.getStringExtra(RecordActivity.TITLE));
                 Log.v(TAG, data.getStringExtra(RecordActivity.RECORD));
 
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
                 String user_id = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-                DocumentReference newRecordRef = db.collection("records").document();
 
                 Record record = new Record();
                 record.setTitle(data.getStringExtra(RecordActivity.TITLE));
                 record.setText(data.getStringExtra(RecordActivity.RECORD));
-                record.setNote_id(newRecordRef.getId());
                 record.setUser_id(user_id);
                 record.setDate((Date) data.getSerializableExtra(RecordActivity.DATE));
                 record.setPhotos(data.getStringArrayListExtra(RecordActivity.PHOTOS));
 
-                newRecordRef.set(record).addOnCompleteListener(task -> {
-                   if (task.isSuccessful()) {
-                       Log.v(TAG, "Say me this shit");
-
-                       Log.v(TAG, "Okay, cool.");
-                       Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
-
-                       if (fragment instanceof RecordsFragment) {
-                           Collections.reverse(record.getPhotos());
-                            ((RecordsFragment) fragment).recordsAdapter.addRecord(record);
-                       } else if (fragment instanceof CalendarFragment) {
-                           Collections.reverse(record.getPhotos());
-                           ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
-                                   ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
-                           ((CalendarFragment) fragment).updateCalendarDots();
-                       }
-
-                   } else {
-                        Log.v(TAG, "Some shit happened");
-                   }
-                });
+                addRecordToDatabase(record);
             }
         } else if (requestCode == MainScreenActivity.EDIT_NOTE) {
             String noteId;
@@ -142,32 +126,9 @@ public class MainScreenActivity extends AppCompatActivity {
                 Date date = (Date) data.getSerializableExtra(RecordActivity.DATE);
                 photoURIs = new ArrayList<>(data.getStringArrayListExtra(RecordActivity.PHOTOS));
 
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                Record updatedRecord = new Record(noteId, title, recordText, date, photoURIs);
 
-                DocumentReference dR = db.collection("records").document(noteId);
-                dR.update("title", title, "text", recordText,
-                        "date", date).addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        Log.v(MainScreenActivity.TAG, "Note has been updated");
-                        Record record = new Record();
-                        record.setTitle(title);
-                        record.setText(recordText);
-                        record.setDate(date);
-                        record.setPhotos(photoURIs);
-
-                        Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
-                        if (fragment instanceof RecordsFragment) {
-                            ((RecordsFragment) fragment).recordsAdapter.updateRecord(position, record);
-                        } else if (fragment instanceof CalendarFragment) {
-                            ((CalendarFragment) fragment).recordsAdapter.updateRecord
-                                    (position, record, ((CalendarFragment) fragment)
-                                            .calendarView.getFirstSelectedDate());
-                            ((CalendarFragment) fragment).updateCalendarDots();
-                        }
-                    } else {
-                        Log.v(MainScreenActivity.TAG, "Note update has been failed");
-                    }
-                });
+                updateRecordToDatabase(updatedRecord, position);
             } else if (resultCode == MainScreenActivity.DELETE_NOTE) {
                 noteId = data.getStringExtra(RecordActivity.NOTE_ID);
                 position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
@@ -175,33 +136,7 @@ public class MainScreenActivity extends AppCompatActivity {
 
                 Log.v(MainScreenActivity.TAG, "DAMN, this shit works!");
 
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-                DocumentReference docRef = db.collection("records").document(noteId);
-                docRef.delete().addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        if (photoURIs != null) {
-                            for (String photoURI : photoURIs) {
-                                StorageReference storageRef = FirebaseStorage.getInstance()
-                                        .getReferenceFromUrl(photoURI);
-
-                                storageRef.delete().addOnSuccessListener(aVoid -> {
-                                    Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
-                                }).addOnFailureListener(e -> {
-                                    Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
-                                });
-                            }
-                        }
-
-                        Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
-                        if (fragment instanceof RecordsFragment) {
-                            ((RecordsFragment) fragment).recordsAdapter.deleteRecord(position);
-                        } else if (fragment instanceof CalendarFragment) {
-                            ((CalendarFragment) fragment).recordsAdapter.deleteRecord(position);
-                            ((CalendarFragment) fragment).updateCalendarDots();
-                        }
-                    }
-                });
+                deleteRecordFromDatabase(noteId, photoURIs, position);
             }
         }
     }
@@ -240,31 +175,10 @@ public class MainScreenActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
             case R.id.action_month:
-                if (month) {
-                    Drawable drawable = ResourcesCompat.getDrawable(getResources(),
-                            R.drawable.ic_apps_black_24dp, null);
-
-                    item.setIcon(drawable);
-                    searchItem.setVisible(true);
-                } else {
-                    Drawable drawable = ResourcesCompat.getDrawable(getResources(),
-                            R.drawable.ic_view_list_black_24dp, null);
-                    item.setIcon(drawable);
-                    searchItem.setVisible(false);
-                }
-                changeFragments(month);
+                changeFragments(item, month);
                 break;
             case R.id.action_refresh:
-                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
-                if (fragment instanceof RecordsFragment) {
-                    ((RecordsFragment) fragment).recordsAdapter.clearRecords();
-                    ((RecordsFragment) fragment).getNotes();
-                }
-                else if (fragment instanceof CalendarFragment) {
-                    ((CalendarFragment) fragment).recordsAdapter.clearRecords();
-                    ((CalendarFragment) fragment).getNotes();
-                    ((CalendarFragment) fragment).updateCalendarDots();
-                }
+                refreshRecords();
                 break;
             case R.id.action_sign_out:
                 signOut();
@@ -273,22 +187,120 @@ public class MainScreenActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void changeFragments(boolean isMonth) {
+    private void addRecordToDatabase(Record record) {
+        DocumentReference newRecordRef = db.collection("records").document();
+        newRecordRef.set(record).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                record.setNote_id(newRecordRef.getId());
+                Log.v(TAG, "Say me this shit");
+                Log.v(TAG, "Okay, cool.");
+                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+
+                if (fragment instanceof RecordsFragment) {
+                    Collections.reverse(record.getPhotos());
+                    ((RecordsFragment) fragment).recordsAdapter.addRecord(record);
+                } else if (fragment instanceof CalendarFragment) {
+                    Collections.reverse(record.getPhotos());
+                    ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
+                            ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
+                    ((CalendarFragment) fragment).updateCalendarDots();
+                }
+
+            } else {
+                Log.v(TAG, "Some shit happened");
+            }
+        });
+    }
+
+    private void updateRecordToDatabase(Record updatedRecord, int position) {
+        DocumentReference dR = db.collection("records").document(updatedRecord.getNote_id());
+        dR.update("title", updatedRecord.getTitle(), "text", updatedRecord.getText(),
+                "date", updatedRecord.getDate()).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Log.v(MainScreenActivity.TAG, "Note has been updated");
+
+                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                if (fragment instanceof RecordsFragment) {
+                    ((RecordsFragment) fragment).recordsAdapter.updateRecord(position, updatedRecord);
+                } else if (fragment instanceof CalendarFragment) {
+                    ((CalendarFragment) fragment).recordsAdapter.updateRecord
+                            (position, updatedRecord, ((CalendarFragment) fragment)
+                                    .calendarView.getFirstSelectedDate());
+                    ((CalendarFragment) fragment).updateCalendarDots();
+                }
+            } else {
+                Log.v(MainScreenActivity.TAG, "Note update has been failed");
+            }
+        });
+    }
+
+    private void deleteRecordFromDatabase(String noteId, ArrayList<String> photoURIs, int position) {
+        DocumentReference docRef = db.collection("records").document(noteId);
+        docRef.delete().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                if (photoURIs != null) {
+                    for (String photoURI : photoURIs) {
+                        StorageReference storageRef = FirebaseStorage.getInstance()
+                                .getReferenceFromUrl(photoURI);
+
+                        storageRef.delete().addOnSuccessListener(aVoid -> {
+                            Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
+                        }).addOnFailureListener(e -> {
+                            Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
+                        });
+                    }
+                }
+
+                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                if (fragment instanceof RecordsFragment) {
+                    ((RecordsFragment) fragment).recordsAdapter.deleteRecord(position);
+                } else if (fragment instanceof CalendarFragment) {
+                    ((CalendarFragment) fragment).recordsAdapter.deleteRecord(position);
+                    ((CalendarFragment) fragment).updateCalendarDots();
+                }
+            }
+        });
+    }
+
+    private void changeFragments(MenuItem item, boolean isMonth) {
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         if (isMonth) {
-            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            Drawable drawable = ResourcesCompat.getDrawable(getResources(),
+                    R.drawable.ic_apps_black_24dp, null);
+
+            item.setIcon(drawable);
+            searchItem.setVisible(true);
+
             fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment(), "visible_fragment");
             fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             fragmentTransaction.commit();
 
             month = false;
         } else {
-            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            Drawable drawable = ResourcesCompat.getDrawable(getResources(),
+                    R.drawable.ic_view_list_black_24dp, null);
+            item.setIcon(drawable);
+            searchItem.setVisible(false);
+
             CalendarFragment calendarFragment = new CalendarFragment();
-            ft.replace(R.id.fragment_records, calendarFragment, "visible_fragment");
-            ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-            ft.commit();
+            fragmentTransaction.replace(R.id.fragment_records, calendarFragment, "visible_fragment");
+            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+            fragmentTransaction.commit();
 
             month = true;
+        }
+    }
+
+    private void refreshRecords() {
+        Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+        if (fragment instanceof RecordsFragment) {
+            ((RecordsFragment) fragment).recordsAdapter.clearRecords();
+            ((RecordsFragment) fragment).getRecordsFromDatabase();
+        }
+        else if (fragment instanceof CalendarFragment) {
+            ((CalendarFragment) fragment).recordsAdapter.clearRecords();
+            ((CalendarFragment) fragment).getNotes();
+            ((CalendarFragment) fragment).updateCalendarDots();
         }
     }
 

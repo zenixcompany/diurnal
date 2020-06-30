@@ -19,6 +19,14 @@ public class Record {
         this.date = date;
     }
 
+    public Record(String note_id, String title, String text, Date date, ArrayList<String> photos) {
+        this.note_id = note_id;
+        this.title = title;
+        this.text = text;
+        this.date = date;
+        this.photos = photos;
+    }
+
     public String getUser_id() {
         return user_id;
     }

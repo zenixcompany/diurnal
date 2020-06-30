@@ -70,11 +70,11 @@ public class RecordsFragment extends Fragment {
         LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
         recordsRecycler.setLayoutManager(layoutManager);
 
-        getNotes();
+        getRecordsFromDatabase();
         return view;
     }
 
-    public void getNotes() {
+    public void getRecordsFromDatabase() {
         db = FirebaseFirestore.getInstance();
 
         collectionReference = db.collection("records");
