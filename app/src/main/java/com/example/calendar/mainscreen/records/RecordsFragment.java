@@ -22,9 +22,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import static com.example.calendar.mainscreen.MainScreenActivity.TAG;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -95,6 +98,8 @@ public class RecordsFragment extends Fragment {
                    Collections.reverse(record.getPhotos());
                    recordsAdapter.addRecord(record);
                }
+               String query = ((MainScreenActivity)getActivity()).getSearchViewQuery();
+               recordsAdapter.getFilter().filter(query);
            } else {
                Log.v(MainScreenActivity.TAG, "Some shitty problem happened");
            }

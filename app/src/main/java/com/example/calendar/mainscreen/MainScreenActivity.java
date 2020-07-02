@@ -1,6 +1,8 @@
 package com.example.calendar.mainscreen;
 
 import android.app.Activity;
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -30,10 +32,13 @@ import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,9 +55,13 @@ public class MainScreenActivity extends AppCompatActivity {
 
     // UI
     private MenuItem searchItem;
+    private SearchView searchView;
 
     // Variables
     private boolean month = false;
+    private boolean isSearchViewOpened = false;
+    private boolean isSearchViewFocused = true;
+    private String mSearchQuery;
 
     private FirebaseFirestore db;
 
@@ -60,15 +69,19 @@ public class MainScreenActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment(), "visible_fragment");
-        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-        fragmentTransaction.commit();
-
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
+
+        if (savedInstanceState == null) {
+            attachRecordsFragment();
+        } else {
+            month = savedInstanceState.getBoolean("isCalendar");
+            mSearchQuery = savedInstanceState.getString("searchKey");
+            isSearchViewOpened = savedInstanceState.getBoolean("isSearchViewOpened");
+            isSearchViewFocused = savedInstanceState.getBoolean("isSearchViewFocused");
+        }
 
         FloatingActionButton fab = findViewById(R.id.main_fab);
         fab.setOnClickListener(view -> {
@@ -145,10 +158,14 @@ public class MainScreenActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
-       searchItem = menu.findItem(R.id.action_search);
+        searchItem = menu.findItem(R.id.action_search);
 
-        SearchView searchView = (SearchView) searchItem.getActionView();
+        searchView = (SearchView) searchItem.getActionView();
         searchView.setImeOptions(EditorInfo.IME_ACTION_DONE);
+
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        assert searchManager != null;
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -167,6 +184,25 @@ public class MainScreenActivity extends AppCompatActivity {
                 return false;
             }
         });
+        changeFragments(menu.findItem(R.id.action_month), !month);
+
+        if (isSearchViewOpened || !TextUtils.isEmpty(mSearchQuery)) {
+            searchItem.expandActionView();
+            searchView.setQuery(mSearchQuery, true);
+            searchView.setFocusable(true);
+
+            if (!isSearchViewFocused) {
+                TextView searchText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+                searchView.clearFocus();
+                searchText.setOnFocusChangeListener((view, b) -> {
+                    if (searchText.hasFocus()) {
+                        searchText.setCursorVisible(true);
+                    }
+                });
+                searchText.setCursorVisible(false);
+                searchText.clearFocus();
+            }
+        }
 
         return true;
     }
@@ -175,6 +211,7 @@ public class MainScreenActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
             case R.id.action_month:
+                mSearchQuery = null;
                 changeFragments(item, month);
                 break;
             case R.id.action_refresh:
@@ -185,6 +222,21 @@ public class MainScreenActivity extends AppCompatActivity {
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        mSearchQuery = searchView.getQuery().toString();
+        outState.putBoolean("isCalendar", month);
+        outState.putString("searchKey", mSearchQuery);
+        outState.putBoolean("isSearchViewOpened", !searchView.isIconified());
+        outState.putBoolean("isSearchViewFocused", getCurrentFocus() instanceof SearchView.SearchAutoComplete);
+    }
+
+    public String getSearchViewQuery() {
+        return (isSearchViewOpened || !TextUtils.isEmpty(mSearchQuery)) ? mSearchQuery : null;
     }
 
     private void addRecordToDatabase(Record record) {
@@ -262,8 +314,21 @@ public class MainScreenActivity extends AppCompatActivity {
         });
     }
 
-    private void changeFragments(MenuItem item, boolean isMonth) {
+    private void attachRecordsFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment(), "visible_fragment");
+        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        fragmentTransaction.commit();
+    }
+
+    private void attachCalendarFragment() {
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_records, new CalendarFragment(), "visible_fragment");
+        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        fragmentTransaction.commit();
+    }
+
+    private void changeFragments(MenuItem item, boolean isMonth) {
         if (isMonth) {
             Drawable drawable = ResourcesCompat.getDrawable(getResources(),
                     R.drawable.ic_apps_black_24dp, null);
@@ -271,9 +336,7 @@ public class MainScreenActivity extends AppCompatActivity {
             item.setIcon(drawable);
             searchItem.setVisible(true);
 
-            fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment(), "visible_fragment");
-            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-            fragmentTransaction.commit();
+            attachRecordsFragment();
 
             month = false;
         } else {
@@ -282,10 +345,7 @@ public class MainScreenActivity extends AppCompatActivity {
             item.setIcon(drawable);
             searchItem.setVisible(false);
 
-            CalendarFragment calendarFragment = new CalendarFragment();
-            fragmentTransaction.replace(R.id.fragment_records, calendarFragment, "visible_fragment");
-            fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-            fragmentTransaction.commit();
+            attachCalendarFragment();
 
             month = true;
         }

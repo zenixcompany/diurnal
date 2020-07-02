@@ -24,6 +24,8 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import static com.example.calendar.mainscreen.MainScreenActivity.TAG;
+
 public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHolder>
             implements Filterable {
     private ArrayList<Record> recordList;
@@ -39,7 +41,6 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         @Override
         protected FilterResults performFiltering(CharSequence charSequence) {
             ArrayList<Record> recordListFiltered = new ArrayList<>();
-
             if (charSequence == null || charSequence.length() == 0) {
                 recordListFiltered.addAll(recordListForFilter);
             } else {
@@ -226,7 +227,7 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         for (Record record : recordListForFilter) {
             calendar1.setTime(record.getDate());
-            Log.v(MainScreenActivity.TAG, calendar1.get(Calendar.YEAR) + " " +
+            Log.v(TAG, calendar1.get(Calendar.YEAR) + " " +
                     calendar1.get(Calendar.MONTH) + " " +
                     calendar1.get(Calendar.DATE));
             if (calendar1.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
