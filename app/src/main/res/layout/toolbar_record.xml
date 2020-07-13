@@ -2,11 +2,10 @@
 <androidx.appcompat.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@color/toolbarBackground"
+    android:layout_height="?attr/actionBarSize"
+    android:background="@color/colorPrimary"
     android:elevation="@dimen/toolbar_elevation"
-    android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
-    app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+    android:theme="@style/AppTheme.AppBarOverlay">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -17,13 +16,13 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:text="@string/test"
-            android:textColor="@android:color/black"
+            android:textColor="@color/colorAccent"
             android:fontFamily="@font/roboto"
             android:textSize="18sp"
             android:drawableEnd="@drawable/ic_event_note_black_24dp"
             android:drawablePadding="@dimen/drawable_padding"
-            android:background="@color/toolbarBackground"
-            android:backgroundTint="@color/toolbarBackground"
+            android:background="@color/colorPrimary"
+            android:backgroundTint="@color/colorPrimary"
             style="@style/Widget.AppCompat.Button.Borderless"/>
 
         <ImageButton
@@ -31,8 +30,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
             android:contentDescription="@string/edit"
-            android:backgroundTint="@color/toolbarBackground"
+            android:backgroundTint="@color/colorPrimary"
             app:srcCompat="@drawable/ic_mode_edit_black_24dp"/>
 
         <ImageButton
@@ -40,8 +40,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_toStartOf="@id/recordActivity_edit_done"
+            android:layout_centerVertical="true"
             android:contentDescription="@string/delete"
-            android:backgroundTint="@color/toolbarBackground"
+            android:backgroundTint="@color/colorPrimary"
             app:srcCompat="@drawable/ic_delete_black_24dp"/>
 
     </RelativeLayout>

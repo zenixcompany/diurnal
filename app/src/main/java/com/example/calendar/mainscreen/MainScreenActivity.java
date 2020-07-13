@@ -7,11 +7,11 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
-import com.example.calendar.features.LoginActivity;
 import com.example.calendar.application.ConnectivityReceiver;
 import com.example.calendar.application.MyApplication;
 import com.example.calendar.R;
 import com.example.calendar.data.Record;
+import com.example.calendar.features.PreferenceActivity;
 import com.example.calendar.mainscreen.calendar.CalendarFragment;
 import com.example.calendar.mainscreen.records.RecordsFragment;
 import com.example.calendar.record.RecordActivity;
@@ -26,18 +26,20 @@ import com.google.firebase.storage.StorageReference;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -62,25 +64,47 @@ public class MainScreenActivity extends AppCompatActivity {
     private boolean isSearchViewOpened = false;
     private boolean isSearchViewFocused = true;
     private String mSearchQuery;
+    private int mSearchViewStartSelection;
+    private int mSearchViewEndSelection;
+
+    private int defaultNightMode = AppCompatDelegate.MODE_NIGHT_NO;
 
     private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, "onCreate: ");
+        if (MyApplication.getInstance().isNightModeEnabled()) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            defaultNightMode = AppCompatDelegate.MODE_NIGHT_YES;
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            defaultNightMode = AppCompatDelegate.MODE_NIGHT_NO;
+        }
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
 
         if (savedInstanceState == null) {
-            attachRecordsFragment();
+            attachRecordsFragment(new RecordsFragment());
         } else {
             month = savedInstanceState.getBoolean("isCalendar");
             mSearchQuery = savedInstanceState.getString("searchKey");
             isSearchViewOpened = savedInstanceState.getBoolean("isSearchViewOpened");
             isSearchViewFocused = savedInstanceState.getBoolean("isSearchViewFocused");
+            mSearchViewStartSelection = savedInstanceState.getInt("searchViewSelectionStart");
+            mSearchViewEndSelection = savedInstanceState.getInt("searchViewSelectionEnd");
+
+            Fragment currentFragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+
+            if (currentFragment instanceof RecordsFragment) {
+                attachRecordsFragment((RecordsFragment) currentFragment);
+            }
+            else if (currentFragment instanceof CalendarFragment) {
+                attachCalendarFragment((CalendarFragment) currentFragment);
+            }
         }
 
         FloatingActionButton fab = findViewById(R.id.main_fab);
@@ -89,7 +113,8 @@ public class MainScreenActivity extends AppCompatActivity {
             intent.putExtra(RecordActivity.ACTION, RecordActivity.CREATE_NOTE);
             Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
             if (fragment instanceof CalendarFragment) {
-                intent.putExtra(RecordActivity.CHOSE_DATE, ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
+                intent.putExtra(RecordActivity.CHOSE_DATE, ((CalendarFragment) fragment).calendarView
+                        .getSelectedDate().getCalendar());
             }
             startActivityForResult(intent, NEW_NOTE);
         });
@@ -104,6 +129,11 @@ public class MainScreenActivity extends AppCompatActivity {
         MyApplication.getInstance().setConnectivityListener(this::showInternetConnectionSnack);
         if (!ConnectivityReceiver.isConnected()) {
             showInternetConnectionSnack(ConnectivityReceiver.isConnected());
+        }
+
+        if (AppCompatDelegate.getDefaultNightMode() != defaultNightMode) {
+            Handler handler = new Handler();
+            handler.postDelayed(this::recreate, 1);
         }
     }
 
@@ -132,6 +162,7 @@ public class MainScreenActivity extends AppCompatActivity {
             int position;
             ArrayList<String> photoURIs;
             if (resultCode == Activity.RESULT_OK) {
+                String user_id = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
                 noteId = data.getStringExtra(RecordActivity.NOTE_ID);
                 position = data.getExtras().getInt(RecordActivity.NOTE_POSITION);
                 String title = data.getStringExtra(RecordActivity.TITLE);
@@ -139,7 +170,7 @@ public class MainScreenActivity extends AppCompatActivity {
                 Date date = (Date) data.getSerializableExtra(RecordActivity.DATE);
                 photoURIs = new ArrayList<>(data.getStringArrayListExtra(RecordActivity.PHOTOS));
 
-                Record updatedRecord = new Record(noteId, title, recordText, date, photoURIs);
+                Record updatedRecord = new Record(user_id, noteId, title, recordText, date, photoURIs);
 
                 updateRecordToDatabase(updatedRecord, position);
             } else if (resultCode == MainScreenActivity.DELETE_NOTE) {
@@ -184,15 +215,16 @@ public class MainScreenActivity extends AppCompatActivity {
                 return false;
             }
         });
-        changeFragments(menu.findItem(R.id.action_month), !month);
+//        changeFragments(menu.findItem(R.id.action_month), !month);
 
         if (isSearchViewOpened || !TextUtils.isEmpty(mSearchQuery)) {
             searchItem.expandActionView();
             searchView.setQuery(mSearchQuery, true);
             searchView.setFocusable(true);
+            EditText searchText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+            searchText.setSelection(mSearchViewStartSelection, mSearchViewEndSelection);
 
             if (!isSearchViewFocused) {
-                TextView searchText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
                 searchView.clearFocus();
                 searchText.setOnFocusChangeListener((view, b) -> {
                     if (searchText.hasFocus()) {
@@ -212,13 +244,17 @@ public class MainScreenActivity extends AppCompatActivity {
         switch (item.getItemId()){
             case R.id.action_month:
                 mSearchQuery = null;
+                if (searchItem.isVisible()) {
+                    searchItem.collapseActionView();
+                }
                 changeFragments(item, month);
                 break;
             case R.id.action_refresh:
+                mSearchQuery = searchView.isIconified() ? null : searchView.getQuery().toString();
                 refreshRecords();
                 break;
-            case R.id.action_sign_out:
-                signOut();
+            case R.id.action_settings:
+                startActivity(new Intent(this, PreferenceActivity.class));
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -228,11 +264,27 @@ public class MainScreenActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
+
         mSearchQuery = searchView.getQuery().toString();
-        outState.putBoolean("isCalendar", month);
         outState.putString("searchKey", mSearchQuery);
         outState.putBoolean("isSearchViewOpened", !searchView.isIconified());
+        outState.putBoolean("isCalendar", month);
         outState.putBoolean("isSearchViewFocused", getCurrentFocus() instanceof SearchView.SearchAutoComplete);
+
+        if (!searchView.isIconified() && getCurrentFocus() instanceof SearchView.SearchAutoComplete) {
+            TextView searchText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+            outState.putInt("searchViewSelectionStart", searchText.getSelectionStart());
+            outState.putInt("searchViewSelectionEnd", searchText.getSelectionEnd());
+        }
+
+        getSupportFragmentManager().putFragment(outState, "currentFragment",
+                Objects.requireNonNull(getSupportFragmentManager().findFragmentByTag("visible_fragment")));
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        Log.i(TAG, "onRestoreInstanceState: ");
     }
 
     public String getSearchViewQuery() {
@@ -241,9 +293,9 @@ public class MainScreenActivity extends AppCompatActivity {
 
     private void addRecordToDatabase(Record record) {
         DocumentReference newRecordRef = db.collection("records").document();
+        record.setNote_id(newRecordRef.getId());
         newRecordRef.set(record).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                record.setNote_id(newRecordRef.getId());
                 Log.v(TAG, "Say me this shit");
                 Log.v(TAG, "Okay, cool.");
                 Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
@@ -251,10 +303,11 @@ public class MainScreenActivity extends AppCompatActivity {
                 if (fragment instanceof RecordsFragment) {
                     Collections.reverse(record.getPhotos());
                     ((RecordsFragment) fragment).recordsAdapter.addRecord(record);
+                    ((RecordsFragment) fragment).setUpRecyclerVisibility();
                 } else if (fragment instanceof CalendarFragment) {
                     Collections.reverse(record.getPhotos());
                     ((CalendarFragment) fragment).recordsAdapter.addRecord(record,
-                            ((CalendarFragment) fragment).calendarView.getFirstSelectedDate());
+                            ((CalendarFragment) fragment).calendarView.getSelectedDate().getCalendar());
                     ((CalendarFragment) fragment).updateCalendarDots();
                 }
 
@@ -277,7 +330,7 @@ public class MainScreenActivity extends AppCompatActivity {
                 } else if (fragment instanceof CalendarFragment) {
                     ((CalendarFragment) fragment).recordsAdapter.updateRecord
                             (position, updatedRecord, ((CalendarFragment) fragment)
-                                    .calendarView.getFirstSelectedDate());
+                                    .calendarView.getSelectedDate().getCalendar());
                     ((CalendarFragment) fragment).updateCalendarDots();
                 }
             } else {
@@ -306,6 +359,7 @@ public class MainScreenActivity extends AppCompatActivity {
                 Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
                 if (fragment instanceof RecordsFragment) {
                     ((RecordsFragment) fragment).recordsAdapter.deleteRecord(position);
+                    ((RecordsFragment) fragment).setUpRecyclerVisibility();
                 } else if (fragment instanceof CalendarFragment) {
                     ((CalendarFragment) fragment).recordsAdapter.deleteRecord(position);
                     ((CalendarFragment) fragment).updateCalendarDots();
@@ -314,16 +368,16 @@ public class MainScreenActivity extends AppCompatActivity {
         });
     }
 
-    private void attachRecordsFragment() {
+    private void attachRecordsFragment(RecordsFragment recordsFragment) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_records, new RecordsFragment(), "visible_fragment");
+        fragmentTransaction.replace(R.id.fragment_records, recordsFragment, "visible_fragment");
         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         fragmentTransaction.commit();
     }
 
-    private void attachCalendarFragment() {
+    private void attachCalendarFragment(CalendarFragment calendarFragment) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_records, new CalendarFragment(), "visible_fragment");
+        fragmentTransaction.replace(R.id.fragment_records, calendarFragment, "visible_fragment");
         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         fragmentTransaction.commit();
     }
@@ -336,7 +390,7 @@ public class MainScreenActivity extends AppCompatActivity {
             item.setIcon(drawable);
             searchItem.setVisible(true);
 
-            attachRecordsFragment();
+            attachRecordsFragment(new RecordsFragment());
 
             month = false;
         } else {
@@ -345,7 +399,8 @@ public class MainScreenActivity extends AppCompatActivity {
             item.setIcon(drawable);
             searchItem.setVisible(false);
 
-            attachCalendarFragment();
+
+            attachCalendarFragment(new CalendarFragment());
 
             month = true;
         }
@@ -359,18 +414,8 @@ public class MainScreenActivity extends AppCompatActivity {
         }
         else if (fragment instanceof CalendarFragment) {
             ((CalendarFragment) fragment).recordsAdapter.clearRecords();
-            ((CalendarFragment) fragment).getNotes();
-            ((CalendarFragment) fragment).updateCalendarDots();
+            ((CalendarFragment) fragment).getRecordsFromDatabase();
         }
-    }
-
-    private void signOut() {
-        FirebaseAuth.getInstance().signOut();
-
-        Intent intent = new Intent(MainScreenActivity.this, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 
     private void showInternetConnectionSnack(boolean isConnected) {

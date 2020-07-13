@@ -1,16 +1,27 @@
 package com.example.calendar.record;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.ImageDecoder;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
-import android.text.InputType;
+import android.provider.MediaStore;
+import android.transition.Fade;
+import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -22,6 +33,7 @@ import android.net.Uri;
 import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 
 import com.example.calendar.application.ConnectivityReceiver;
 import com.example.calendar.mainscreen.MainScreenActivity;
@@ -38,17 +50,21 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Locale;
 
 public class RecordActivity extends AppCompatActivity implements RecordSelectPhotoDialog.OnPhotoSelectedListener,
-                                                                    DatePickerDialog.OnDateSetListener{
+                                                                    DatePickerDialog.OnDateSetListener,
+                                                            ViewTreeObserver.OnGlobalLayoutListener {
     // Constants
-
     public static final String ACTION = "ACTION";
     public static final String CREATE_NOTE = "CREATE_NOTE";
     public static final String EDIT_NOTE = "EDIT_NOTE";
@@ -62,6 +78,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     public static final String PHOTOS = "PHOTOS";
 
     // UI
+    private RelativeLayout mRootLayout;
     private RecyclerView photosRecycler;
     private ProgressBar progressBar;
     private ImageButton deleteButton;
@@ -70,11 +87,27 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     private EditText titleView;
     private EditText recordView;
 
+    private AlertDialog deleteDialog;
+    private AlertDialog deletePhotoDialog;
+    private AlertDialog uploadPhotoCancelDialog;
+    private DatePickerDialog datePickerDialog;
+
     // Variables
     // false - CREATE_NOTE, true - EDIT_NOTE
     private boolean action = false;
     private boolean isEditing = false;
+    private boolean isKeyboardShowing = false;
+    private boolean isRecordField = true;
     private boolean isPhotoChanged = false;
+
+    private boolean isDeleteDialogShowing = false;
+    private boolean isDeletePhotoDialogShowing = false;
+    private int toDeletePhotoPosition;
+    private boolean isUploadPhotoCancelDialogShowing = false;
+    private boolean isDatePickerShowing = false;
+
+    private int startSelection = 0;
+    private int endSelection = 0;
 
     private Intent intent;
 
@@ -87,8 +120,8 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
     private RecordPhotosAdapter photosAdapter;
 
-    private FirebaseFirestore db;
     private CollectionReference recordsRef;
+    private StorageReference mStorageRef;
     private UploadTask uploadPhotoTask;
 
     @Override
@@ -96,6 +129,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record);
 
+        mRootLayout = findViewById(R.id.recordActivity_layout);
         progressBar = findViewById(R.id.recordActivity_progress_bar);
         titleView = findViewById(R.id.recordActivity_title);
         recordView = findViewById(R.id.recordActivity_text);
@@ -113,7 +147,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             Calendar choseCalendar = (Calendar) intent.getExtras().getSerializable(CHOSE_DATE);
             Calendar calendar = Calendar.getInstance();
 
-            calendarPicker.setOnClickListener(view -> showDatePickerDialog());
+            calendarPicker.setOnClickListener(view -> showDatePickerDialog(noteDate));
 
             if (actionStr.contentEquals(CREATE_NOTE)) {
                 setUpNoteCreating(choseCalendar, calendar);
@@ -122,12 +156,14 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             }
         }
 
+        mRootLayout.getViewTreeObserver().addOnGlobalLayoutListener(this);
+
         title = titleView.getText().toString();
         record = recordView.getText().toString();
 
         setUpPhotoRecycler();
 
-        db = FirebaseFirestore.getInstance();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
         recordsRef = db.collection("records");
 
         Toolbar toolbar = findViewById(R.id.recordActivity_toolbar);
@@ -141,24 +177,172 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     }
 
     @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putBoolean("mode", isEditing);
+
+        if (getCurrentFocus() != null) {
+            saveCursorState();
+            outState.putBoolean("isKeyboardShowing", isKeyboardShowing);
+            outState.putBoolean("isRecord", isRecordField);
+            outState.putInt("startSelection", startSelection);
+            outState.putInt("endSelection", endSelection);
+        }
+
+        if (newDate != null) {
+            outState.putSerializable("newDate", newDate);
+        }
+        outState.putSerializable("noteDate", noteDate);
+        outState.putBoolean("isPhotoChanged", isPhotoChanged);
+        outState.putStringArrayList("photosUri", photosUri);
+
+        saveDialogStates(outState);
+
+        if (mStorageRef != null && progressBar.getVisibility() == View.VISIBLE) {
+            outState.putString("storageReference", mStorageRef.toString());
+        }
+    }
+
+    private void saveCursorState() {
+        switch (getCurrentFocus().getId()) {
+            case R.id.recordActivity_title:
+                isRecordField = false;
+                startSelection = ((EditText) getCurrentFocus()).getSelectionStart();
+                endSelection = ((EditText) getCurrentFocus()).getSelectionEnd();
+                break;
+            case R.id.recordActivity_text:
+                isRecordField = true;
+                startSelection = ((EditText) getCurrentFocus()).getSelectionStart();
+                endSelection = ((EditText) getCurrentFocus()).getSelectionEnd();
+                break;
+        }
+    }
+
+    private void saveDialogStates(@NonNull Bundle outState) {
+        if (deleteDialog != null) {
+            if (deleteDialog.isShowing()) {
+                isDeleteDialogShowing = true;
+                deleteDialog.dismiss();
+            } else {
+                isDeleteDialogShowing = false;
+            }
+            outState.putBoolean("isDeleteDialogShowing", isDeleteDialogShowing);
+        } else if (deletePhotoDialog != null) {
+            if (deletePhotoDialog.isShowing()) {
+                isDeletePhotoDialogShowing = true;
+                outState.putInt("toDeletePhotoPosition", toDeletePhotoPosition);
+                deletePhotoDialog.dismiss();
+            } else {
+                isDeletePhotoDialogShowing = false;
+            }
+            outState.putBoolean("isDeletePhotoDialogShowing", isDeletePhotoDialogShowing);
+        } else if (datePickerDialog != null) {
+            if (datePickerDialog.isShowing()) {
+                isDatePickerShowing = true;
+
+                Calendar selectedCalendar = Calendar.getInstance();
+                selectedCalendar.set(Calendar.MONTH, datePickerDialog.getDatePicker().getMonth());
+                selectedCalendar.set(Calendar.DAY_OF_MONTH, datePickerDialog.getDatePicker().getDayOfMonth());
+                selectedCalendar.set(Calendar.YEAR, datePickerDialog.getDatePicker().getYear());
+
+                Date selectedDate = selectedCalendar.getTime();
+                outState.putSerializable("datePickerSelectedDate", selectedDate);
+
+                datePickerDialog.dismiss();
+            } else {
+                isDatePickerShowing = false;
+            }
+            outState.putBoolean("isDatePickerShowing", isDatePickerShowing);
+        } else if (uploadPhotoCancelDialog != null) {
+            if (uploadPhotoCancelDialog.isShowing()) {
+                isUploadPhotoCancelDialogShowing = true;
+
+                uploadPhotoCancelDialog.dismiss();
+            } else {
+                isUploadPhotoCancelDialogShowing = false;
+            }
+            outState.putBoolean("isUploadPhotoCancelDialogShowing", isUploadPhotoCancelDialogShowing);
+        }
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        isEditing = savedInstanceState.getBoolean("mode");
+
+        isRecordField = savedInstanceState.getBoolean("isRecord", true);
+        startSelection = savedInstanceState.getInt("startSelection", recordView.length());
+        endSelection = savedInstanceState.getInt("endSelection", recordView.length());
+        isKeyboardShowing = savedInstanceState.getBoolean("isKeyboardShowing");
+
+        if (isEditing) {
+            enableEditing(isRecordField ? recordView : titleView, startSelection, endSelection,
+                    true);
+        }
+
+        newDate = (Date) savedInstanceState.getSerializable("newDate");
+        if (newDate != null) {
+            Calendar newCalendar = new GregorianCalendar();
+            newCalendar.setTime(newDate);
+            changeDate(newCalendar);
+        }
+        noteDate = (Date) savedInstanceState.getSerializable("noteDate");
+        isPhotoChanged = savedInstanceState.getBoolean("isPhotoChanged");
+        photosUri = savedInstanceState.getStringArrayList("photosUri");
+
+        isDeleteDialogShowing = savedInstanceState.getBoolean("isDeleteDialogShowing");
+        isDeletePhotoDialogShowing = savedInstanceState.getBoolean("isDeletePhotoDialogShowing");
+        isUploadPhotoCancelDialogShowing = savedInstanceState.getBoolean("isUploadPhotoCancelDialogShowing");
+        isDatePickerShowing = savedInstanceState.getBoolean("isDatePickerShowing");
+        if (isDeleteDialogShowing) {
+            showConfirmDeleteDialog();
+        } else if (isDeletePhotoDialogShowing) {
+            int position = savedInstanceState.getInt("toDeletePhotoPosition");
+            showConfirmDeletePhotoDialog(position);
+        } else if (isDatePickerShowing) {
+            Date selectedDate = (Date) savedInstanceState.getSerializable("datePickerSelectedDate");
+            showDatePickerDialog(selectedDate);
+        } else if (isUploadPhotoCancelDialogShowing) {
+            showConfirmPhotoUploadCancelDialog();
+        }
+
+        String strStorageRef = savedInstanceState.getString("storageReference");
+        if (strStorageRef != null) {
+            mStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(strStorageRef);
+            List<UploadTask> uploadTaskList = mStorageRef.getActiveUploadTasks();
+            if (uploadTaskList.size() > 0) {
+                UploadTask uploadTask = uploadTaskList.get(0);
+                setPhotoUploadListeners(uploadTask, mStorageRef.getName());
+                uploadPhotoTask = uploadTask;
+            }
+        }
+    }
+
+    @Override
     public void onBackPressed() {
         if (progressBar.getVisibility() == View.VISIBLE) {
             if (uploadPhotoTask.isInProgress()) {
                 uploadPhotoTask.pause();
-                confirmPhotoUploadCancel();
+                showConfirmPhotoUploadCancelDialog();
             }
             return;
         }
 
-        if (checkChanges()) {
-            intent.putExtra(TITLE, titleView.getText().toString());
-            intent.putExtra(RECORD, recordView.getText().toString());
-            if (newDate != null)
-                intent.putExtra(DATE, newDate);
-            else
-                intent.putExtra(DATE, noteDate);
-            intent.putExtra(PHOTOS, photosUri);
-            setResult(RESULT_OK, intent);
+        if (action && isEditing) {
+            editDoneButton.performClick();
+            return;
+        } else {
+            if (checkChanges()) {
+                intent.putExtra(TITLE, titleView.getText().toString());
+                intent.putExtra(RECORD, recordView.getText().toString());
+                if (newDate != null)
+                    intent.putExtra(DATE, newDate);
+                else
+                    intent.putExtra(DATE, noteDate);
+                intent.putExtra(PHOTOS, photosUri);
+                setResult(RESULT_OK, intent);
+            }
         }
         super.onBackPressed();
     }
@@ -186,6 +370,10 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
         editDoneButton.setVisibility(View.GONE);
         deleteButton.setVisibility(View.GONE);
+
+        startSelection = titleView.length();
+        endSelection = titleView.length();
+        enableEditing(titleView, startSelection, endSelection, false);
     }
 
     private void setUpNoteEditing(Calendar calendar) {
@@ -207,44 +395,93 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         Drawable editDrawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
         editDoneButton.setImageDrawable(editDrawable);
 
-        isEditing = false;
-
+        startSelection = recordView.length();
+        endSelection = recordView.length();
         editDoneButton.setOnClickListener(view -> {
             if (isEditing) {
+                if (getCurrentFocus() != null) {
+                    saveCursorState();
+                }
                 disableEditing();
             } else {
-                enableEditing();
+                enableEditing(isRecordField ? recordView : titleView, startSelection, endSelection,
+                        false);
             }
         });
 
-        deleteButton.setOnClickListener(view -> confirmDeleteDialog());
+        deleteButton.setOnClickListener(view -> showConfirmDeleteDialog());
 
         photosUri = getIntent().getStringArrayListExtra(PHOTOS);
     }
 
-    private void enableEditing() {
-        titleView.setInputType(InputType.TYPE_CLASS_TEXT);
-        titleView.setEnabled(true);
-        recordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        recordView.setEnabled(true);
+    private void enableEditing(EditText view, int startSelection, int endSelection, boolean isRestored) {
+        enableContentInteractions();
+
+        if (!isRestored && !isKeyboardShowing) {
+            showSoftKeyboard(view);
+        } else if (isRestored && isKeyboardShowing) {
+            showSoftKeyboard(view);
+        }
 
         Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_done_black_24dp);
         editDoneButton.setImageDrawable(drawable);
+
+        view.requestFocus();
+        if (isRestored) {
+            view.setSelection(startSelection, endSelection);
+        } else {
+            view.setSelection(endSelection);
+        }
 
         isEditing = true;
     }
 
     private void disableEditing() {
-        titleView.setInputType(InputType.TYPE_NULL);
-        titleView.setEnabled(false);
-        recordView.setInputType(InputType.TYPE_NULL);
-        recordView.setEnabled(false);
-        recordView.setSingleLine(false);
+        if (getCurrentFocus() != null) {
+            hideSoftKeyboard(getCurrentFocus());
+        }
+        disableContentInteractions();
 
         Drawable drawable = ContextCompat.getDrawable(this, R.drawable.ic_mode_edit_black_24dp);
         editDoneButton.setImageDrawable(drawable);
 
         isEditing = false;
+    }
+
+    private void enableContentInteractions() {
+        titleView.setKeyListener(new EditText(this).getKeyListener());
+        titleView.setFocusable(true);
+        titleView.setFocusableInTouchMode(true);
+        titleView.setCursorVisible(true);
+
+        recordView.setKeyListener(new EditText(this).getKeyListener());
+        recordView.setFocusable(true);
+        recordView.setFocusableInTouchMode(true);
+        recordView.setCursorVisible(true);
+    }
+
+    private void disableContentInteractions() {
+        titleView.setKeyListener(null);
+        titleView.setFocusable(false);
+        titleView.setFocusableInTouchMode(false);
+        titleView.setCursorVisible(false);
+
+        recordView.setKeyListener(null);
+        recordView.setFocusable(false);
+        recordView.setFocusableInTouchMode(false);
+        recordView.setCursorVisible(false);
+    }
+
+    private void showSoftKeyboard(View view) {
+        if(view.requestFocus()) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
+    private void hideSoftKeyboard(View view) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
     private void setUpPhotoRecycler() {
@@ -272,18 +509,43 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
                                     getString(R.string.internetConnectionFailedPhoto), Snackbar.LENGTH_LONG)
                                     .show();
                         }
+                } else {
+                    Bundle bundle = new Bundle();
+                    bundle.putString("photoUrl", photos.get(position).getPhotoUrl());
+                    RecordPhotoFragment photoFragment = new RecordPhotoFragment();
+                    photoFragment.setArguments(bundle);
+
+                    photoFragment.setEnterTransition(new Fade());
+                    photoFragment.setExitTransition(new Fade());
+
+                    getSupportFragmentManager()
+                            .beginTransaction()
+                            .add(R.id.recordActivity_frame, photoFragment)
+                            .addToBackStack(null)
+                            .commit();
                 }
             }
 
             @Override
             public void onDeleteImageClick(int position) {
-                confirmDeletePhotoDialog(position);
+                showConfirmDeletePhotoDialog(position);
             }
         });
         photosRecycler.setAdapter(photosAdapter);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         photosRecycler.setLayoutManager(layoutManager);
+        photosRecycler.post(() -> {
+            View first = photosRecycler.getChildAt(0);
+            int[] originalPos = new int[2];
+            first.getLocationInWindow(originalPos);
+            float progressBarWidthPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                    25,
+                    getResources().getDisplayMetrics());
+            int viewCenter = (int) ((first.getWidth() / 2) - progressBarWidthPx);
+            progressBar.setX((int)originalPos[0] + viewCenter + 4);
+            progressBar.setY((int)originalPos[1] + 4);
+        });
     }
 
     public String createImageName() {
@@ -296,14 +558,33 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     public void getChosenImage(Uri imagePath) {
         String imageName = createImageName();
 
-        savePhotoToStorage(imagePath, imageName);
+        try {
+            Bitmap imageBitmap;
+            if (Build.VERSION.SDK_INT < 28) {
+                imageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(),
+                        imagePath);
+            } else {
+                ImageDecoder.Source imageSource = ImageDecoder.createSource(this.getContentResolver(),
+                        imagePath);
+                imageBitmap = ImageDecoder.decodeBitmap(imageSource);
+            }
+            savePhotoToStorage(imageBitmap, imageName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void getTakenImage(File image) {
         String imageName = image.getName().substring(0, image.getName().lastIndexOf('.'));
-
-        savePhotoToStorage(Uri.fromFile(image), imageName);
+        Uri imageUri = Uri.fromFile(image);
+        try {
+            Bitmap imageBitmap = RecordSelectPhotoDialog.handleSamplingAndRotationBitmap(this,
+                    imageUri);
+            savePhotoToStorage(imageBitmap, imageName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private boolean checkChanges() {
@@ -313,26 +594,29 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
                 isPhotoChanged || newDate != null;
     }
 
-    private void confirmDeleteDialog() {
-        AlertDialog.Builder deleteDialog = new AlertDialog.Builder(this);
-        deleteDialog.setMessage(R.string.deleteConfirmation);
+    private void showConfirmDeleteDialog() {
+        AlertDialog.Builder deleteDialogBuilder = new AlertDialog.Builder(this);
+        deleteDialogBuilder.setMessage(R.string.deleteConfirmation);
 
-        deleteDialog.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
+        deleteDialogBuilder.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
             setResult(MainScreenActivity.DELETE_NOTE, intent);
             finish();
         });
 
-        deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
+        deleteDialogBuilder.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
         });
 
-        deleteDialog.create().show();
+        deleteDialogBuilder.setOnDismissListener(dialogInterface -> deleteDialog = null);
+
+        deleteDialog = deleteDialogBuilder.create();
+        deleteDialog.show();
     }
 
-    private void confirmDeletePhotoDialog(int position) {
-        AlertDialog.Builder deleteDialog = new AlertDialog.Builder(this);
-        deleteDialog.setMessage(R.string.deletePhotoConfirmation);
+    private void showConfirmDeletePhotoDialog(int position) {
+        AlertDialog.Builder deletePhotoDialogBuilder = new AlertDialog.Builder(this);
+        deletePhotoDialogBuilder.setMessage(R.string.deletePhotoConfirmation);
 
-        deleteDialog.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
+        deletePhotoDialogBuilder.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
             if (action) {
                 recordsRef.document(recordId).update("photos", FieldValue.arrayRemove(photosAdapter
                         .photos.get(position).getPhotoUrl()))
@@ -346,10 +630,14 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             }
         });
 
-        deleteDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
+        deletePhotoDialogBuilder.setOnDismissListener(dialogInterface -> deletePhotoDialog = null);
+
+        deletePhotoDialogBuilder.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
         });
 
-        deleteDialog.create().show();
+        toDeletePhotoPosition = position;
+        deletePhotoDialog = deletePhotoDialogBuilder.create();
+        deletePhotoDialog.show();
     }
 
     private void deletePhotoFromStorage(int position) {
@@ -373,7 +661,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
     private void addPhotoUriToDatabase(String photoName, String photoUri) {
         recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
-                .addOnCompleteListener(task -> {
+                .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         photosUri.add(0, photoUri);
                         Log.v(MainScreenActivity.TAG, "Photo URL was bound to record");
@@ -388,32 +676,42 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
                 });
     }
 
-    private void confirmPhotoUploadCancel() {
-        AlertDialog.Builder confirmDialog = new AlertDialog.Builder(this);
-        confirmDialog.setMessage(R.string.cancelUploadConfirmation);
+    private void showConfirmPhotoUploadCancelDialog() {
+        AlertDialog.Builder photoUploadCancelDialogBuilder = new AlertDialog.Builder(this);
+        photoUploadCancelDialogBuilder.setMessage(R.string.cancelUploadConfirmation);
 
-        confirmDialog.setPositiveButton(R.string.continueUploading, (dialogInterface, i) -> {
+        photoUploadCancelDialogBuilder.setPositiveButton(R.string.continueUploading, (dialogInterface, i) -> {
             uploadPhotoTask.resume();
         });
 
-        confirmDialog.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
+        photoUploadCancelDialogBuilder.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
             uploadPhotoTask.cancel();
             hideProgressBar();
         });
+        photoUploadCancelDialogBuilder.setOnDismissListener(dialogInterface -> uploadPhotoCancelDialog = null);
 
-        confirmDialog.create().show();
+        uploadPhotoCancelDialog = photoUploadCancelDialogBuilder.create();
+        uploadPhotoCancelDialog.show();
     }
 
-    private void savePhotoToStorage(Uri photo, String photoName) {
+    private void savePhotoToStorage(Bitmap photo, String photoName) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        photo.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        byte[] imageBytes = baos.toByteArray();
+
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         String userID = user.getUid();
 
-        StorageReference storageReference = FirebaseStorage.getInstance().getReference()
+       mStorageRef = FirebaseStorage.getInstance().getReference()
                 .child("images/users/" + userID + "/" + photoName);
+        uploadPhotoTask = mStorageRef.putBytes(imageBytes);
+        setPhotoUploadListeners(uploadPhotoTask, photoName);
+    }
+
+    private void setPhotoUploadListeners(UploadTask uploadTask, String photoName) {
         showProgressBar();
-        uploadPhotoTask = storageReference.putFile(photo);
-        uploadPhotoTask.addOnSuccessListener(taskSnapshot -> {
+        uploadTask.addOnSuccessListener(this, taskSnapshot -> {
             Log.v(MainScreenActivity.TAG, "Dopy");
             Task<Uri> result = taskSnapshot.getMetadata().getReference().getDownloadUrl();
             result.addOnSuccessListener(uri -> {
@@ -433,9 +731,9 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
                 }
             });
 
-        }).addOnFailureListener(e -> {
+        }).addOnFailureListener(this, e -> {
             Log.v(MainScreenActivity.TAG, "Shitty");
-        }).addOnProgressListener(taskSnapshot -> {
+        }).addOnProgressListener(this, taskSnapshot -> {
             double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
             Log.v(MainScreenActivity.TAG, "Progress" + progress);
             progressBar.setProgress((int)progress);
@@ -453,12 +751,14 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
     }
 
-    private void showDatePickerDialog() {
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+    private void showDatePickerDialog(Date selectedDate) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(selectedDate);
+        datePickerDialog = new DatePickerDialog(this,
                                                 this,
-                                                Calendar.getInstance().get(Calendar.YEAR),
-                                                Calendar.getInstance().get(Calendar.MONTH),
-                                                Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
+                                                calendar.get(Calendar.YEAR),
+                                                calendar.get(Calendar.MONTH),
+                                                calendar.get(Calendar.DAY_OF_MONTH));
         datePickerDialog.show();
     }
 
@@ -468,9 +768,39 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         calendar.set(Calendar.YEAR, i);
         calendar.set(Calendar.MONTH, i1);
         calendar.set(Calendar.DAY_OF_MONTH, i2);
+        noteDate = calendar.getTime();
         newDate = calendar.getTime();
 
-        String date = i1+1 + "/" + i2 + "/" + i;
-        calendarPicker.setText(date);
+        changeDate(calendar);
+    }
+
+    private void changeDate(Calendar date) {
+        String dateStr = date.get(Calendar.MONTH)+1 + "/" + date.get(Calendar.DAY_OF_MONTH) +
+                "/" + date.get(Calendar.YEAR);
+        calendarPicker.setText(dateStr);
+    }
+
+    @Override
+    public void onGlobalLayout() {
+        Rect r = new Rect();
+        mRootLayout.getWindowVisibleDisplayFrame(r);
+        int screenHeight = mRootLayout.getRootView().getHeight();
+
+        // r.bottom is the position above soft keypad or device button.
+        // if keypad is shown, the r.bottom is smaller than that before.
+        int keypadHeight = screenHeight - r.bottom;
+
+        if (keypadHeight > screenHeight * 0.15) { // 0.15 ratio is perhaps enough to determine keypad height.
+            // keyboard is opened
+            if (!isKeyboardShowing) {
+                isKeyboardShowing = true;
+            }
+        }
+        else {
+            // keyboard is closed
+            if (isKeyboardShowing) {
+                isKeyboardShowing = false;
+            }
+        }
     }
 }

@@ -2,20 +2,28 @@ package com.example.calendar.application;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 
 import androidx.annotation.NonNull;
+import androidx.preference.PreferenceManager;
 
 public class MyApplication extends Application {
-    private static MyApplication myApplication;
+    private static MyApplication singleton = null;
+
+    // Night mode
+    public static final String NIGHT_MODE = "NIGHT_MODE";
+    private boolean mIsNightModeEnabled = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        singleton = this;
 
+        // Internet connectivity
         ConnectivityManager connectivityManager = (ConnectivityManager)
                 this.getSystemService(Context.CONNECTIVITY_SERVICE);
 
@@ -38,14 +46,33 @@ public class MyApplication extends Application {
             }
         });
 
-        myApplication = this;
+        // Night mode
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mIsNightModeEnabled = sharedPreferences.getBoolean(NIGHT_MODE, false);
+
     }
 
     public static synchronized MyApplication getInstance() {
-        return myApplication;
+        if (singleton == null) {
+            singleton = new MyApplication();
+        }
+        return singleton;
     }
 
     public void setConnectivityListener(ConnectivityReceiver.ConnectivityReceiverListener listener) {
         ConnectivityReceiver.receiverListener = listener;
+    }
+
+    public boolean isNightModeEnabled() {
+        return mIsNightModeEnabled;
+    }
+
+    public void setIsNightModeEnabled(boolean isNightModeEnabled) {
+        this.mIsNightModeEnabled = isNightModeEnabled;
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(NIGHT_MODE, isNightModeEnabled);
+        editor.apply();
     }
 }

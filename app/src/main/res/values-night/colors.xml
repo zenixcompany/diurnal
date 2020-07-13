@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FAFAFA</color>
-    <color name="colorPrimaryDark">#757575</color>
-    <color name="colorAccent">@android:color/black</color>
-    <color name="colorBackground">#FAFAFA</color>
+    <color name="colorPrimary">#212121</color>
+    <color name="colorPrimaryDark">@android:color/black</color>
+    <color name="colorAccent">@android:color/white</color>
+    <color name="colorBackground">#121212</color>
     <color name="colorSurface">@color/colorPrimary</color>
-    <color name="colorOnSurface">@android:color/black</color>
+    <color name="colorOnSurface">@android:color/white</color>
 
     <color name="cardViewBackground">#E3F2FD</color>
 

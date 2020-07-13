@@ -1,62 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/recordActivity_layout"
+    android:id="@+id/recordActivity_frame"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/white"
-    tools:context=".record.RecordActivity">
-
-    <ProgressBar
-        android:id="@+id/recordActivity_progress_bar"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:progressDrawable="@drawable/circle"
-        android:layout_centerInParent="true"
-        android:visibility="gone"
-        android:max="100"
-        android:progress="0"/>
-
-    <include
-        android:id="@+id/recordActivity_toolbar"
-        layout="@layout/toolbar_record"/>
-
-    <EditText
-        android:id="@+id/recordActivity_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/recordActivity_toolbar"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:maxLength="40"
-        android:layout_margin="@dimen/editTextMargin"
-        android:hint="@string/title"
-        android:fontFamily="@font/roboto"
-        android:textColor="@color/edittext_disabled_colors"
-        android:importantForAutofill="no" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recordActivity_photos_recycler"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/recordActivity_title"
-        android:layout_marginStart="@dimen/photoMargin"
-        android:layout_marginEnd="@dimen/photoMargin"/>
-
-    <EditText
-        android:id="@+id/recordActivity_text"
+    android:layout_height="match_parent">
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/recordActivity_photos_recycler"
-        android:ems="10"
-        android:gravity="start|top"
-        android:layout_margin="@dimen/editTextMargin"
-        android:hint="@string/thought"
-        android:fontFamily="@font/roboto"
-        android:textColor="@color/edittext_disabled_colors"
-        android:inputType="textMultiLine"
-        android:importantForAutofill="no" />
+        android:fillViewport="true">
+        <RelativeLayout
+            android:id="@+id/recordActivity_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorBackground"
+            tools:context=".record.RecordActivity">
 
+            <include
+                android:id="@+id/recordActivity_toolbar"
+                layout="@layout/toolbar_record"/>
 
-</RelativeLayout>
+            <EditText
+                android:id="@+id/recordActivity_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/recordActivity_toolbar"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:maxLength="40"
+                android:layout_margin="@dimen/editTextMargin"
+                android:hint="@string/title"
+                android:fontFamily="@font/roboto"
+                android:textColor="@color/edittext_disabled_colors"
+                android:importantForAutofill="no"
+                android:imeOptions="flagNoExtractUi"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recordActivity_photos_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/recordActivity_title"
+                android:layout_marginStart="@dimen/photoMargin"
+                android:layout_marginEnd="@dimen/photoMargin"/>
+
+            <EditText
+                android:id="@+id/recordActivity_text"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@+id/recordActivity_photos_recycler"
+                android:ems="10"
+                android:gravity="start|top"
+                android:layout_margin="@dimen/editTextMargin"
+                android:hint="@string/thought"
+                android:fontFamily="@font/roboto"
+                android:textColor="@color/edittext_disabled_colors"
+                android:inputType="textMultiLine"
+                android:importantForAutofill="no"
+                android:imeOptions="flagNoExtractUi"/>
+            <ProgressBar
+                android:id="@+id/recordActivity_progress_bar"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:progressDrawable="@drawable/circle"
+                android:visibility="gone"
+                android:max="100"
+                android:progress="0"/>
+        </RelativeLayout>
+    </ScrollView>
+</FrameLayout>

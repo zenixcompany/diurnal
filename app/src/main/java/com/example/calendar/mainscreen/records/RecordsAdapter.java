@@ -1,7 +1,6 @@
 package com.example.calendar.mainscreen.records;
 
 import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.Filter;
@@ -10,7 +9,6 @@ import android.widget.TextView;
 
 import com.example.calendar.R;
 import com.example.calendar.data.Record;
-import com.example.calendar.mainscreen.MainScreenActivity;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -24,7 +22,6 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import static com.example.calendar.mainscreen.MainScreenActivity.TAG;
 
 public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHolder>
             implements Filterable {
@@ -163,22 +160,11 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     }
 
     public void updateRecord(int position, Record record) {
-        recordList.get(position).setTitle(record.getTitle());
-        recordList.get(position).setText(record.getText());
-        recordList.get(position).setDate(record.getDate());
-        recordList.get(position).setPhotos(record.getPhotos());
+        Record toDelete = recordList.remove(position);
+        recordList.add(record);
 
-        Record toDelete = recordList.get(position);
-        recordList.remove(position);
-
-        recordList.add(toDelete);
-
-        recordListForFilter.get(position).setTitle(record.getTitle());
-        recordListForFilter.get(position).setText(record.getText());
-        recordListForFilter.get(position).setDate(record.getDate());
-        recordListForFilter.get(position).setPhotos(record.getPhotos());
-        recordListForFilter.remove(position);
-        recordListForFilter.add(toDelete);
+        recordListForFilter.remove(toDelete);
+        recordListForFilter.add(record);
 
         Collections.sort(recordList, sortByDate);
         Collections.sort(recordListForFilter, sortByDate);
@@ -187,29 +173,18 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
     }
 
     public void updateRecord(int position, Record record, Calendar calendar) {
-        recordList.get(position).setTitle(record.getTitle());
-        recordList.get(position).setText(record.getText());
-        recordList.get(position).setDate(record.getDate());
-        recordList.get(position).setPhotos(record.getPhotos());
+        Record toDelete = recordList.remove(position);
+        recordList.add(record);
 
-        Record toDelete = recordList.get(position);
-        recordList.remove(position);
-
-        recordList.add(toDelete);
-
-        recordListForFilter.get(position).setTitle(record.getTitle());
-        recordListForFilter.get(position).setText(record.getText());
-        recordListForFilter.get(position).setDate(record.getDate());
-        recordListForFilter.get(position).setPhotos(record.getPhotos());
-        recordListForFilter.remove(position);
-        recordListForFilter.add(toDelete);
+        recordListForFilter.remove(toDelete);
+        recordListForFilter.add(record);
 
         filterByDate(calendar);
     }
 
     public void deleteRecord(int position) {
-        recordList.remove(position);
-        recordListForFilter.remove(position);
+        Record toDelete = recordList.remove(position);
+        recordListForFilter.remove(toDelete);
 
         notifyDataSetChanged();
     }
@@ -227,9 +202,6 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
         for (Record record : recordListForFilter) {
             calendar1.setTime(record.getDate());
-            Log.v(TAG, calendar1.get(Calendar.YEAR) + " " +
-                    calendar1.get(Calendar.MONTH) + " " +
-                    calendar1.get(Calendar.DATE));
             if (calendar1.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
             calendar1.get(Calendar.MONTH) == calendar.get(Calendar.MONTH) &&
             calendar1.get(Calendar.DATE) == calendar.get(Calendar.DATE)) {

@@ -40,8 +40,6 @@ public class RecordPhotosAdapter extends RecyclerView.Adapter<RecordPhotosAdapte
         public void onDeleteImageClick(int position);
     }
 
-
-
     public void setListener(Listener listener) {
         this.listener = listener;
     }
@@ -76,7 +74,7 @@ public class RecordPhotosAdapter extends RecyclerView.Adapter<RecordPhotosAdapte
         }
         else{
             Picasso.with(context).load(photos.get(position).getPhotoUrl())
-                    .resize(400, 400).centerInside().into(image);
+                    .resize(400, 0).into(image);
         }
 
         deleteImage.setOnClickListener(view -> listener.onDeleteImageClick(position));

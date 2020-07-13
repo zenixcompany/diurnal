@@ -7,7 +7,7 @@
     android:layout_height="@dimen/cardview_height"
     cardView:cardCornerRadius="4dp"
     android:layout_marginTop="6dp"
-    android:backgroundTint="@color/toolbarBackground"
+    android:backgroundTint="@color/colorSurface"
     android:layout_marginStart="@dimen/recyclerMarginTop"
     android:layout_marginEnd="@dimen/recyclerMarginTop">
 
@@ -57,7 +57,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="15dp"
                 android:id="@+id/date_month"
-                android:background="@color/materialGrey"
+                android:background="@color/greyMaterial"
                 android:layout_below="@id/date_day_number"
                 android:text="@string/test"
                 android:gravity="center"

@@ -6,10 +6,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.example.calendar.R;
 import com.example.calendar.mainscreen.MainScreenActivity;
-import com.example.calendar.mainscreen.records.RecordsAdapter;
 import com.example.calendar.record.RecordActivity;
 import com.example.calendar.data.Record;
 import com.google.firebase.auth.FirebaseAuth;
@@ -22,19 +22,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import static com.example.calendar.mainscreen.MainScreenActivity.TAG;
 
 /**
  * A simple {@link Fragment} subclass.
  */
 public class RecordsFragment extends Fragment {
+    // UI
     public RecyclerView recordsRecycler;
+    private TextView emptyListTextView;
 
+    // Variables
     private ArrayList<Record> recordsList;
     public RecordsAdapter recordsAdapter;
 
@@ -52,6 +53,7 @@ public class RecordsFragment extends Fragment {
         View view =  inflater.inflate(R.layout.fragment_records, container, false);
 
         recordsRecycler = view.findViewById(R.id.records_recycler);
+        emptyListTextView = view.findViewById(R.id.records_empty);
 
         recordsList = new ArrayList<>();
         recordsAdapter = new RecordsAdapter(recordsList);
@@ -98,11 +100,18 @@ public class RecordsFragment extends Fragment {
                    Collections.reverse(record.getPhotos());
                    recordsAdapter.addRecord(record);
                }
-               String query = ((MainScreenActivity)getActivity()).getSearchViewQuery();
-               recordsAdapter.getFilter().filter(query);
+               if (getActivity() != null) {
+                   String query = ((MainScreenActivity)getActivity()).getSearchViewQuery();
+                   recordsAdapter.getFilter().filter(query);
+                   setUpRecyclerVisibility();
+               }
            } else {
                Log.v(MainScreenActivity.TAG, "Some shitty problem happened");
            }
         });
+    }
+
+    public void setUpRecyclerVisibility() {
+        emptyListTextView.setVisibility(recordsList.isEmpty() ? View.VISIBLE : View.GONE);
     }
 }

@@ -19,13 +19,12 @@
 
     <item android:id="@+id/action_refresh"
         android:title="@string/refresh"
-        android:icon="@drawable/ic_refresh_black_24dp"
         android:orderInCategory="3"
         app:showAsAction="never"/>
 
-    <item android:id="@+id/action_sign_out"
-        android:title="@string/sign_out"
-        android:orderInCategory="100"
-        app:showAsAction="never" />
+    <item android:id="@+id/action_settings"
+        android:title="@string/settings"
+        android:orderInCategory="99"
+        app:showAsAction="never"/>
 
 </menu>

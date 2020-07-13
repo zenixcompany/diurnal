@@ -19,7 +19,9 @@ public class Record {
         this.date = date;
     }
 
-    public Record(String note_id, String title, String text, Date date, ArrayList<String> photos) {
+    public Record(String user_id, String note_id, String title, String text, Date date,
+                  ArrayList<String> photos) {
+        this.user_id = user_id;
         this.note_id = note_id;
         this.title = title;
         this.text = text;
@@ -73,5 +75,14 @@ public class Record {
 
     public void setPhotos(ArrayList<String> photos) {
         this.photos = photos;
+    }
+
+    @Override
+    public String toString() {
+        return "Record{" +
+                "title='" + title + '\'' +
+                ", text='" + text + '\'' +
+                ", date=" + date +
+                '}';
     }
 }

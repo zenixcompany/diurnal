@@ -8,7 +8,6 @@
     <string name="search">Search</string>
     <string name="title">Title</string>
     <string name="record">Record</string>
-    <string name="sign_out">Sign out</string>
     <string name="edit">Edit</string>
     <string name="done">Done</string>
     <string name="cancel">Cancel</string>
@@ -36,7 +35,19 @@
     <string name="permissionStorageDenied">You should allow storage permissions to add an image.</string>
     <string name="permissionCameraDenied">You should allow camera permissions to take an image.</string>
 
+    <string name="emptyRecordsList">There are no records</string>
+    <string name="emptyRecordsListCalendar">There are no records on this day</string>
+
     <string name="thought">Describe your thoughts</string>
 
     <string name="photo">Photo</string>
+    <string name="photoFullSizeDescription">Full size photo</string>
+
+    <!--Preferences-->
+    <string name="settings">Settings</string>
+    <string name="general">General</string>
+    <string name="darkTheme">Dark Theme</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+    <string name="logOut">Log out</string>
 </resources>
