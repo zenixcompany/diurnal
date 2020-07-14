@@ -595,7 +595,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     }
 
     private void showConfirmDeleteDialog() {
-        AlertDialog.Builder deleteDialogBuilder = new AlertDialog.Builder(this);
+        AlertDialog.Builder deleteDialogBuilder = new AlertDialog.Builder(this, R.style.AlertDialogCustom);
         deleteDialogBuilder.setMessage(R.string.deleteConfirmation);
 
         deleteDialogBuilder.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
@@ -613,7 +613,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     }
 
     private void showConfirmDeletePhotoDialog(int position) {
-        AlertDialog.Builder deletePhotoDialogBuilder = new AlertDialog.Builder(this);
+        AlertDialog.Builder deletePhotoDialogBuilder = new AlertDialog.Builder(this, R.style.AlertDialogCustom);
         deletePhotoDialogBuilder.setMessage(R.string.deletePhotoConfirmation);
 
         deletePhotoDialogBuilder.setPositiveButton(R.string.delete, (dialogInterface, i) -> {
@@ -677,7 +677,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     }
 
     private void showConfirmPhotoUploadCancelDialog() {
-        AlertDialog.Builder photoUploadCancelDialogBuilder = new AlertDialog.Builder(this);
+        AlertDialog.Builder photoUploadCancelDialogBuilder = new AlertDialog.Builder(this, R.style.AlertDialogCustom);
         photoUploadCancelDialogBuilder.setMessage(R.string.cancelUploadConfirmation);
 
         photoUploadCancelDialogBuilder.setPositiveButton(R.string.continueUploading, (dialogInterface, i) -> {

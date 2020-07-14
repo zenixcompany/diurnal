@@ -6,6 +6,7 @@ import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.calendar.data.User;
 import com.example.calendar.mainscreen.MainScreenActivity;
 import com.example.calendar.application.MyApplication;
 import com.example.calendar.R;
@@ -51,7 +52,7 @@ public class LoginActivity extends AppCompatActivity {
         btn_login.setOnClickListener(v -> SignInGoogle());
 
         if (mAuth.getCurrentUser() != null) {
-            signIn();
+            signIn(mAuth.getCurrentUser());
         }
     }
 
@@ -78,7 +79,7 @@ public class LoginActivity extends AppCompatActivity {
                         FirebaseUser user = mAuth.getCurrentUser();
 
                         if (user != null) {
-                            signIn();
+                            signIn(user);
                         }
 
                     } else {
@@ -108,11 +109,23 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void signIn() {
+    private void signIn(FirebaseUser firebaseUser) {
+        User user = getUserInfo(firebaseUser);
         Intent intent = new Intent(LoginActivity.this, MainScreenActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.putExtra("user", user);
         startActivity(intent);
         finish();
+    }
+
+    private User getUserInfo(FirebaseUser firebaseUser) {
+        User user = new User();
+        user.setUserId(firebaseUser.getUid());
+        user.setUsername(firebaseUser.getDisplayName());
+        user.setEmail(firebaseUser.getEmail());
+        user.setPhotoUrl(firebaseUser.getPhotoUrl().toString());
+
+        return user;
     }
 
     private void showInternetConnectionSnack(boolean isConnected) {

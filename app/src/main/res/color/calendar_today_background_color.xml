@@ -6,5 +6,5 @@
     <item
         android:color="@color/colorOnSurface"
         android:state_pressed="true"/>
-    <item android:color="@color/greyMaterial"/>
+    <item android:color="@color/colorOnSurface"/>
 </selector>

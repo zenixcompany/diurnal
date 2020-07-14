@@ -1,9 +1,12 @@
 package com.example.calendar.mainscreen.calendar;
 
 import android.content.Context;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.TextAppearanceSpan;
 
 import com.example.calendar.R;
+import com.example.calendar.application.MyApplication;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.DayViewDecorator;
 import com.prolificinteractive.materialcalendarview.DayViewFacade;

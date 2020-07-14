@@ -17,6 +17,10 @@
         <item name="background">@color/colorPrimary</item>
     </style>
 
+    <style name="AlertDialogCustom" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <item name="colorPrimary">@color/colorOnSurface</item>
+    </style>
+
     <!-- Calendar today. -->
     <style name="Today">
         <item name="android:textColor">@color/calendar_today_text_color</item>
@@ -25,7 +29,6 @@
     <style name="Day">
         <item name="android:textColor">@color/calendar_day_text_color</item>
     </style>
-
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>

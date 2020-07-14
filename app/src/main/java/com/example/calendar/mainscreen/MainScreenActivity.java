@@ -11,6 +11,7 @@ import com.example.calendar.application.ConnectivityReceiver;
 import com.example.calendar.application.MyApplication;
 import com.example.calendar.R;
 import com.example.calendar.data.Record;
+import com.example.calendar.data.User;
 import com.example.calendar.features.PreferenceActivity;
 import com.example.calendar.mainscreen.calendar.CalendarFragment;
 import com.example.calendar.mainscreen.records.RecordsFragment;
@@ -60,6 +61,8 @@ public class MainScreenActivity extends AppCompatActivity {
     private SearchView searchView;
 
     // Variables
+    private User mUser;
+
     private boolean month = false;
     private boolean isSearchViewOpened = false;
     private boolean isSearchViewFocused = true;
@@ -86,6 +89,8 @@ public class MainScreenActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
+
+        mUser = getIntent().getParcelableExtra("user");
 
         if (savedInstanceState == null) {
             attachRecordsFragment(new RecordsFragment());
@@ -133,7 +138,13 @@ public class MainScreenActivity extends AppCompatActivity {
 
         if (AppCompatDelegate.getDefaultNightMode() != defaultNightMode) {
             Handler handler = new Handler();
-            handler.postDelayed(this::recreate, 1);
+            handler.postDelayed(() -> {
+                recreate();
+                Fragment fragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+                if (fragment instanceof CalendarFragment) {
+//                    attachCalendarFragment(CalendarFragment.newInstance());
+                }
+            }, 1);
         }
     }
 
@@ -254,7 +265,9 @@ public class MainScreenActivity extends AppCompatActivity {
                 refreshRecords();
                 break;
             case R.id.action_settings:
-                startActivity(new Intent(this, PreferenceActivity.class));
+                Intent intent = new Intent(this, PreferenceActivity.class);
+                intent.putExtra("user", mUser);
+                startActivity(intent);
                 break;
         }
         return super.onOptionsItemSelected(item);

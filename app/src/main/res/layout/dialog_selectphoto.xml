@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="10dp">
+    android:padding="10dp"
+    android:background="@color/colorBackground">
     
     <TextView
         android:id="@+id/dialog_choosePhoto"
@@ -11,7 +12,7 @@
         android:layout_height="40dp"
         android:text="@string/choosePhoto"
         android:textSize="15sp"
-        android:textColor="@android:color/black"
+        android:textColor="@color/colorOnSurface"
         android:gravity="center_vertical"/>
 
     <TextView
@@ -21,7 +22,7 @@
         android:layout_below="@id/dialog_choosePhoto"
         android:text="@string/takePhoto"
         android:textSize="15sp"
-        android:textColor="@android:color/black"
+        android:textColor="@color/colorOnSurface"
         android:gravity="center_vertical" />
     
 </RelativeLayout>

@@ -11,11 +11,11 @@ import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 
 import java.util.Calendar;
 
-public class DayDecorator implements DayViewDecorator {
+public class DaysDecorator implements DayViewDecorator {
     private Context context;
     private MaterialCalendarView calendarView;
 
-    public DayDecorator(Context context, MaterialCalendarView calendarView) {
+    public DaysDecorator(Context context, MaterialCalendarView calendarView) {
         this.context = context;
         this.calendarView = calendarView;
     }

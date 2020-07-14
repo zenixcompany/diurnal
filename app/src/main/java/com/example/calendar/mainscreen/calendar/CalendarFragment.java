@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 
-import android.text.style.TextAppearanceSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +13,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.example.calendar.R;
+import com.example.calendar.application.MyApplication;
 import com.example.calendar.mainscreen.MainScreenActivity;
 import com.example.calendar.mainscreen.records.RecordsAdapter;
 import com.example.calendar.record.RecordActivity;
@@ -24,10 +24,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
-import com.prolificinteractive.materialcalendarview.DayViewDecorator;
-import com.prolificinteractive.materialcalendarview.DayViewFacade;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
-import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -47,7 +44,8 @@ public class CalendarFragment extends Fragment {
     private RecyclerView calendarRecycler;
     private TextView emptyListTextView;
     public MaterialCalendarView calendarView;
-    private CalendarDecorator dotsDecorator;
+    private DotsDecorator dotsDecorator;
+    private TodayDecorator todayDecorator;
 
     // Variables
     private ArrayList<Record> recordList;
@@ -61,6 +59,13 @@ public class CalendarFragment extends Fragment {
         // Required empty public constructor
     }
 
+    public static CalendarFragment newInstance() {
+        Bundle args = new Bundle();
+        CalendarFragment fragment = new CalendarFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -69,7 +74,11 @@ public class CalendarFragment extends Fragment {
             LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(view.getWidth(),
                     view.getHeight() / 2);
             calendarView.setLayoutParams(layoutParams);
+
+            calendarView.setSelectionColor(getResources().getColor(R.color.colorOnSurface,
+                    getContext().getTheme()));
         });
+
         emptyListTextView = view.findViewById(R.id.calendar_day_empty);
         calendarView = view.findViewById(R.id.records_calendar);
 
@@ -78,20 +87,19 @@ public class CalendarFragment extends Fragment {
 
         calendarDays = new ArrayList<>();
 
-        DayDecorator dayDecorator = new DayDecorator(getContext(), calendarView);
-        calendarView.addDecorator(dayDecorator);
+        DaysDecorator daysDecorator = new DaysDecorator(getContext(), calendarView);
+        calendarView.addDecorator(daysDecorator);
 
-        calendarView.setOnMonthChangedListener(new OnMonthChangedListener() {
-            @Override
-            public void onMonthChanged(MaterialCalendarView widget, CalendarDay date) {
-                Log.i(MainScreenActivity.TAG, "onMonthChanged: ");
-                calendarView.removeDecorator(dayDecorator);
-                calendarView.invalidateDecorators();
-                calendarView.addDecorator(dayDecorator);
-            }
+        calendarView.setOnMonthChangedListener((widget, date) -> {
+            Log.i(MainScreenActivity.TAG, "onMonthChanged: ");
+            calendarView.removeDecorator(todayDecorator);
+            calendarView.removeDecorator(daysDecorator);
+            calendarView.invalidateDecorators();
+            calendarView.addDecorator(daysDecorator);
+            calendarView.addDecorator(todayDecorator);
         });
 
-        TodayDecorator todayDecorator = new TodayDecorator(getContext());
+        todayDecorator = new TodayDecorator(getContext());
         calendarView.addDecorator(todayDecorator);
 
         calendarView.setOnDateChangedListener((widget, date, selected) -> {
@@ -154,7 +162,7 @@ public class CalendarFragment extends Fragment {
 
             calendarDays.add(CalendarDay.from(calendar));
         }
-        dotsDecorator = new CalendarDecorator(Color.RED, calendarDays);
+        dotsDecorator = new DotsDecorator(Color.RED, calendarDays);
         calendarView.addDecorator(dotsDecorator);
 
         setUpRecyclerVisibility();

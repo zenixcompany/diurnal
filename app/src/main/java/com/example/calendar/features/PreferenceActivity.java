@@ -2,6 +2,7 @@ package com.example.calendar.features;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.cardview.widget.CardView;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
@@ -10,12 +11,25 @@ import androidx.preference.SwitchPreferenceCompat;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.TextView;
 
 import com.example.calendar.R;
 import com.example.calendar.application.MyApplication;
+import com.example.calendar.data.User;
 import com.google.firebase.auth.FirebaseAuth;
+import com.makeramen.roundedimageview.RoundedImageView;
+import com.squareup.picasso.Picasso;
 
 public class PreferenceActivity extends AppCompatActivity {
+    // UI
+    private CardView mUserCard;
+    private RoundedImageView mUserPhoto;
+    private TextView mUsername;
+    private TextView mUserEmail;
+
+    // Variables
+    private User mUser;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,6 +40,15 @@ public class PreferenceActivity extends AppCompatActivity {
         }
         setContentView(R.layout.activity_preference);
         setUpToolbar();
+
+        mUserCard = findViewById(R.id.user_info);
+        mUserPhoto = mUserCard.findViewById(R.id.user_photo);
+        mUsername = mUserCard.findViewById(R.id.user_name);
+        mUserEmail = mUserCard.findViewById(R.id.user_email);
+
+        mUser = getIntent().getParcelableExtra("user");
+
+        fillUserInformation();
 
         if (savedInstanceState == null) {
             getSupportFragmentManager()
@@ -80,5 +103,12 @@ public class PreferenceActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
+    }
+
+    private void fillUserInformation() {
+        Picasso.with(this).load(mUser.getPhotoUrl()).into(mUserPhoto);
+
+        mUsername.setText(mUser.getUsername());
+        mUserEmail.setText(mUser.getEmail());
     }
 }
