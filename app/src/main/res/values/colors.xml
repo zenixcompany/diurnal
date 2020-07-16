@@ -7,12 +7,11 @@
     <color name="colorSurface">@color/colorPrimary</color>
     <color name="colorOnSurface">@android:color/black</color>
 
-    <color name="cardViewBackground">#E3F2FD</color>
-
     <color name="loginBackground">#E0E0E0</color>
     
     <color name="greyMaterial">#E0E0E0</color>
     <color name="redMaterial">#FF8A80</color>
+    <color name="pinkMaterial">#FF80AB</color>
     <color name="purpleMaterial">#B388FF</color>
     <color name="blueMaterial">#8C9EFF</color>
     <color name="greenMaterial">#B9F6CA</color>

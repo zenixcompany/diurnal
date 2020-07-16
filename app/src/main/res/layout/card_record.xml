@@ -1,100 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:cardView="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/cardview_height"
+    android:layout_height="wrap_content"
     cardView:cardCornerRadius="4dp"
     android:layout_marginTop="6dp"
     android:backgroundTint="@color/colorSurface"
     android:layout_marginStart="@dimen/recyclerMarginTop"
     android:layout_marginEnd="@dimen/recyclerMarginTop">
-
-    <RelativeLayout
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/line">
-
-        <RelativeLayout
-            android:layout_width="@dimen/date_width"
-            android:layout_height="@dimen/date_height"
-            android:id="@+id/date_layout"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentStart="true"
-
-            android:layout_marginStart="@dimen/date_margin"
-            android:layout_marginBottom="@dimen/date_margin"
-            android:layout_marginTop="@dimen/date_margin"
-            android:layout_marginEnd="@dimen/date_margin">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="15dp"
-                android:id="@+id/date_day_text"
-                android:gravity="center"
-                android:fontFamily="@font/roboto"
-                android:text="@string/test"
-                android:textColor="@android:color/black"
-                android:textSize="10sp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="17dp"
-                android:id="@+id/date_day_number"
-                android:layout_below="@id/date_day_text"
-                android:text="@string/test"
-                android:layout_marginTop="-1dp"
-                android:layout_marginBottom="-1dp"
-                android:gravity="center"
-                android:textSize="14sp"
-                android:textColor="@android:color/black"
-                android:background="@android:color/white"
-                tools:layout_editor_absoluteX="0dp"
-                tools:layout_editor_absoluteY="14dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="15dp"
-                android:id="@+id/date_month"
-                android:background="@color/greyMaterial"
-                android:layout_below="@id/date_day_number"
-                android:text="@string/test"
-                android:gravity="center"
-                android:textSize="10sp"
-                android:textColor="@android:color/black"
-                tools:layout_editor_absoluteX="0dp"
-                tools:layout_editor_absoluteY="30dp" />
-        </RelativeLayout>
+        android:layout_height="@dimen/cardview_height"
+        android:id="@+id/card_record"
+        cardView:cardCornerRadius="4dp">
 
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_alignParentTop="true"
-            android:layout_toEndOf="@id/date_layout"
-            android:layout_marginTop="@dimen/date_margin"
-            android:layout_marginBottom="@dimen/date_margin"
-            android:layout_marginEnd="@dimen/date_margin">
+            android:background="@drawable/line">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="23dp"
-                android:id="@+id/record_title"
-                android:text="@string/test"
-                android:textSize="18sp"
-                android:fontFamily="@font/roboto"
-                android:textStyle="bold"/>
+            <RelativeLayout
+                android:layout_width="@dimen/date_width"
+                android:layout_height="@dimen/date_height"
+                android:id="@+id/date_layout"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentStart="true"
 
-            <TextView
+                android:layout_marginStart="@dimen/date_margin"
+                android:layout_marginBottom="@dimen/date_margin"
+                android:layout_marginTop="@dimen/date_margin"
+                android:layout_marginEnd="@dimen/date_margin">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="15dp"
+                    android:id="@+id/date_day_text"
+                    android:gravity="center"
+                    android:fontFamily="@font/roboto"
+                    android:text="@string/test"
+                    android:textColor="@android:color/black"
+                    android:textSize="10sp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="17dp"
+                    android:id="@+id/date_day_number"
+                    android:layout_below="@id/date_day_text"
+                    android:text="@string/test"
+                    android:layout_marginTop="-1dp"
+                    android:layout_marginBottom="-1dp"
+                    android:gravity="center"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/black"
+                    android:background="@android:color/white"
+                    tools:layout_editor_absoluteX="0dp"
+                    tools:layout_editor_absoluteY="14dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="15dp"
+                    android:id="@+id/date_month"
+                    android:background="@color/greyMaterial"
+                    android:layout_below="@id/date_day_number"
+                    android:text="@string/test"
+                    android:gravity="center"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/black"
+                    tools:layout_editor_absoluteX="0dp"
+                    tools:layout_editor_absoluteY="30dp" />
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/record_text"
-                android:layout_below="@id/record_title"
-                android:text="@string/test"
-                android:fontFamily="@font/roboto"
-                android:textSize="15.8sp"/>
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@id/date_layout"
+                android:layout_marginTop="@dimen/date_margin"
+                android:layout_marginBottom="@dimen/date_margin"
+                android:layout_marginEnd="@dimen/date_margin">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="23dp"
+                    android:id="@+id/record_title"
+                    android:text="@string/test"
+                    android:textSize="18sp"
+                    android:fontFamily="@font/roboto"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/record_text"
+                    android:layout_below="@id/record_title"
+                    android:text="@string/test"
+                    android:fontFamily="@font/roboto"
+                    android:textSize="15.8sp"/>
+            </RelativeLayout>
         </RelativeLayout>
-
-    </RelativeLayout>
-
-</androidx.cardview.widget.CardView>
+    </androidx.cardview.widget.CardView>
+</FrameLayout>

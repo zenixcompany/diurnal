@@ -12,6 +12,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
         android:weightSum="2">
         <com.makeramen.roundedimageview.RoundedImageView
             android:id="@+id/user_photo"
@@ -19,7 +21,6 @@
             android:layout_height="match_parent"
             android:layout_weight="0.5"
             android:padding="2dp"
-            android:src="@drawable/logo"
             app:riv_oval="true"/>
 
         <LinearLayout
@@ -28,19 +29,23 @@
             android:layout_weight="1.5"
             android:orientation="vertical"
             android:layout_margin="16dp">
+
             <TextView
                 android:id="@+id/user_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/roboto"
+                android:maxLines="1"
+                android:text="@string/test"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:text="@string/test" />
+                android:textStyle="bold" />
+
             <TextView
                 android:id="@+id/user_email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/roboto"
+                android:maxLines="1"
                 android:textSize="15.8sp"
                 android:text="@string/test" />
         </LinearLayout>

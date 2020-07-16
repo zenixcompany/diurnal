@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Diurnal</string>
     <string name="action_settings">Settings</string>
+    <string name="logo">Logo</string>
 
     <string name="test">Test</string>
 
@@ -45,9 +46,7 @@
 
     <!--Preferences-->
     <string name="settings">Settings</string>
-    <string name="general">General</string>
     <string name="darkTheme">Dark Theme</string>
-    <string name="about">About</string>
     <string name="version">Version</string>
     <string name="logOut">Log out</string>
 </resources>

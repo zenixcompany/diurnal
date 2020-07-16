@@ -18,7 +18,7 @@
         android:id="@+id/records_empty"
         android:layout_gravity="center"
         android:fontFamily="@font/roboto"
-        android:text="@string/emptyRecordsListCalendar"
+        android:text="@string/emptyRecordsList"
         android:textSize="18sp"
         android:visibility="gone"/>
 </FrameLayout>
