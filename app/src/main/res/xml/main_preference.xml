@@ -6,8 +6,7 @@
         android:title="@string/darkTheme"/>
     <Preference
         android:key="version"
-        android:title="@string/version"
-        android:summary="1.1"/>
+        android:title="@string/version" />
     <Preference
         android:key="log_out"
         android:title="@string/logOut"/>

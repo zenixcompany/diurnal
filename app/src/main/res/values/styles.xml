@@ -9,16 +9,28 @@
 <!--        <item name="android:windowBackground">@color/colorBackground</item>-->
         <item name="colorSurface">@color/colorSurface</item>
         <item name="colorOnSurface">@color/colorOnSurface</item>
-        <item name="actionBarStyle">@style/ActionBarTheme</item>
+        <item name="actionBarStyle">@style/ActionBarStyle</item>
+        <item name="actionBarTheme">@style/ActionBarTheme</item>
         <item name="android:textColorSecondary">@color/colorAccent</item>
     </style>
 
-    <style name="ActionBarTheme" parent="Widget.MaterialComponents.ActionBar.Primary">
+    <style name="ActionBarStyle" parent="Widget.MaterialComponents.ActionBar.Primary">
         <item name="background">@color/colorPrimary</item>
+    </style>
+
+    <style name="ActionBarTheme" parent="@style/ThemeOverlay.MaterialComponents.ActionBar">
+        <item name="colorControlNormal">@color/colorOnSurface</item>
     </style>
 
     <style name="AlertDialogCustom" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
         <item name="colorPrimary">@color/colorOnSurface</item>
+    </style>
+
+    <style name="DatePickerDialogCustom" parent="Theme.AppCompat.DayNight.Dialog">
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorPrimary">@color/colorBackground</item>
+        <item name="colorOnPrimary">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
     </style>
 
     <!-- Calendar today. -->

@@ -7,7 +7,10 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
-import com.hifeful.diurnal.application.ConnectivityReceiver;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.hifeful.diurnal.application.MyApplication;
 import com.hifeful.diurnal.R;
 import com.hifeful.diurnal.data.Record;
@@ -17,7 +20,6 @@ import com.hifeful.diurnal.mainscreen.calendar.CalendarFragment;
 import com.hifeful.diurnal.mainscreen.records.RecordsFragment;
 import com.hifeful.diurnal.record.RecordActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -46,6 +48,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class MainScreenActivity extends AppCompatActivity {
@@ -72,6 +76,7 @@ public class MainScreenActivity extends AppCompatActivity {
 
     private int defaultNightMode = AppCompatDelegate.MODE_NIGHT_NO;
 
+    private FirebaseUser mCurrentUser;
     private FirebaseFirestore db;
 
     @Override
@@ -90,10 +95,23 @@ public class MainScreenActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
 
-        mUser = getIntent().getParcelableExtra("user");
+        db = FirebaseFirestore.getInstance();
+        mCurrentUser = FirebaseAuth.getInstance().getCurrentUser();
+        checkDocumentAvailability(mCurrentUser);
+        mUser = getUserInfo(mCurrentUser);
 
         if (savedInstanceState == null) {
-            attachRecordsFragment(new RecordsFragment());
+            Fragment currentFragment = getSupportFragmentManager().findFragmentByTag("visible_fragment");
+            if (currentFragment != null) {
+                if (currentFragment instanceof RecordsFragment) {
+                    attachRecordsFragment((RecordsFragment) currentFragment);
+                }
+                else if (currentFragment instanceof CalendarFragment) {
+                    attachCalendarFragment((CalendarFragment) currentFragment);
+                }
+            } else {
+                attachRecordsFragment(new RecordsFragment());
+            }
         } else {
             month = savedInstanceState.getBoolean("isCalendar");
             mSearchQuery = savedInstanceState.getString("searchKey");
@@ -123,18 +141,12 @@ public class MainScreenActivity extends AppCompatActivity {
             }
             startActivityForResult(intent, NEW_NOTE);
         });
-
-        db = FirebaseFirestore.getInstance();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        MyApplication.getInstance().setConnectivityListener(this::showInternetConnectionSnack);
-        if (!ConnectivityReceiver.isConnected()) {
-            showInternetConnectionSnack(ConnectivityReceiver.isConnected());
-        }
+        Log.i(TAG, "onResume: ");
 
         if (AppCompatDelegate.getDefaultNightMode() != defaultNightMode) {
             Handler handler = new Handler();
@@ -145,9 +157,11 @@ public class MainScreenActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.i(TAG, "onActivityResult: ");
 
         if (requestCode == NEW_NOTE) {
             if (resultCode == RESULT_OK) {
+                Log.i(TAG, "onActivityResult: New note");
                 Log.v(TAG, data.getStringExtra(RecordActivity.TITLE));
                 Log.v(TAG, data.getStringExtra(RecordActivity.RECORD));
 
@@ -220,7 +234,7 @@ public class MainScreenActivity extends AppCompatActivity {
                 return false;
             }
         });
-//        changeFragments(menu.findItem(R.id.action_month), !month);
+        changeIcons(menu.findItem(R.id.action_month), !month);
 
         if (isSearchViewOpened || !TextUtils.isEmpty(mSearchQuery)) {
             searchItem.expandActionView();
@@ -253,16 +267,16 @@ public class MainScreenActivity extends AppCompatActivity {
                     searchItem.collapseActionView();
                 }
                 changeFragments(item, month);
-                break;
+                return true;
             case R.id.action_refresh:
                 mSearchQuery = searchView.isIconified() ? null : searchView.getQuery().toString();
                 refreshRecords();
-                break;
+                return true;
             case R.id.action_settings:
                 Intent intent = new Intent(this, PreferenceActivity.class);
                 intent.putExtra("user", mUser);
                 startActivity(intent);
-                break;
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -270,8 +284,7 @@ public class MainScreenActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-
-
+        Log.i(TAG, "onSaveInstanceState: ");
         mSearchQuery = searchView.getQuery().toString();
         outState.putString("searchKey", mSearchQuery);
         outState.putBoolean("isSearchViewOpened", !searchView.isIconified());
@@ -288,14 +301,42 @@ public class MainScreenActivity extends AppCompatActivity {
                 Objects.requireNonNull(getSupportFragmentManager().findFragmentByTag("visible_fragment")));
     }
 
-    @Override
-    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        Log.i(TAG, "onRestoreInstanceState: ");
-    }
-
     public String getSearchViewQuery() {
         return (isSearchViewOpened || !TextUtils.isEmpty(mSearchQuery)) ? mSearchQuery : null;
+    }
+
+    private void checkDocumentAvailability(FirebaseUser firebaseUser) {
+        DocumentReference documentReference = db.collection("users")
+                .document(firebaseUser.getUid());
+
+        documentReference.get().addOnCompleteListener((OnCompleteListener<DocumentSnapshot>) task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot documentSnapshot = task.getResult();
+                if (documentSnapshot != null && documentSnapshot.exists()) {
+                } else {
+                    createUserDocument(firebaseUser);
+                }
+            }
+        });
+    }
+
+    private void createUserDocument(FirebaseUser firebaseUser) {
+        Map<String, Object> user = new HashMap<>();
+        user.put("user_id", firebaseUser.getUid());
+        user.put("photo_count", 0);
+
+        db.collection("users").document(firebaseUser.getUid())
+                .set(user);
+    }
+
+    private User getUserInfo(FirebaseUser firebaseUser) {
+        User user = new User();
+        user.setUserId(firebaseUser.getUid());
+        user.setUsername(firebaseUser.getDisplayName());
+        user.setEmail(firebaseUser.getEmail());
+        user.setPhotoUrl(firebaseUser.getPhotoUrl().toString());
+
+        return user;
     }
 
     private void addRecordToDatabase(Record record) {
@@ -356,9 +397,7 @@ public class MainScreenActivity extends AppCompatActivity {
                                 .getReferenceFromUrl(photoURI);
 
                         storageRef.delete().addOnSuccessListener(aVoid -> {
-                            Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
-                        }).addOnFailureListener(e -> {
-                            Log.v(MainScreenActivity.TAG, "Photo has not been deleted, error: " + e);
+                            decrementPhotoCount();
                         });
                     }
                 }
@@ -373,6 +412,10 @@ public class MainScreenActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+    private void decrementPhotoCount() {
+        db.collection("users").document(mCurrentUser.getUid())
+                .update("photo_count", FieldValue.increment(-1));
     }
 
     private void attachRecordsFragment(RecordsFragment recordsFragment) {
@@ -390,26 +433,30 @@ public class MainScreenActivity extends AppCompatActivity {
     }
 
     private void changeFragments(MenuItem item, boolean isMonth) {
+        changeIcons(item, isMonth);
+        if (isMonth) {
+            attachRecordsFragment(new RecordsFragment());
+
+            month = false;
+        } else {
+            attachCalendarFragment(new CalendarFragment());
+
+            month = true;
+        }
+    }
+
+    private void changeIcons(MenuItem item, boolean isMonth) {
         if (isMonth) {
             Drawable drawable = ResourcesCompat.getDrawable(getResources(),
                     R.drawable.ic_apps_black_24dp, null);
 
             item.setIcon(drawable);
             searchItem.setVisible(true);
-
-            attachRecordsFragment(new RecordsFragment());
-
-            month = false;
         } else {
             Drawable drawable = ResourcesCompat.getDrawable(getResources(),
                     R.drawable.ic_view_list_black_24dp, null);
             item.setIcon(drawable);
             searchItem.setVisible(false);
-
-
-            attachCalendarFragment(new CalendarFragment());
-
-            month = true;
         }
     }
 
@@ -422,19 +469,6 @@ public class MainScreenActivity extends AppCompatActivity {
         else if (fragment instanceof CalendarFragment) {
             ((CalendarFragment) fragment).recordsAdapter.clearRecords();
             ((CalendarFragment) fragment).getRecordsFromDatabase();
-        }
-    }
-
-    private void showInternetConnectionSnack(boolean isConnected) {
-        String message;
-
-        if (isConnected) {
-            message = getString(R.string.internetConnectionSuccess);
-            Snackbar.make(findViewById(R.id.main_layout), message, Snackbar.LENGTH_SHORT).show();
-        }
-        else {
-            message = getString(R.string.internetConnectionFailedRecords);
-            Snackbar.make(findViewById(R.id.main_layout), message, Snackbar.LENGTH_INDEFINITE).show();
         }
     }
 }

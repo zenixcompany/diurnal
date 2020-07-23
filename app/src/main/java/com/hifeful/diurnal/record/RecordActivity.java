@@ -3,11 +3,10 @@ package com.hifeful.diurnal.record;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.ImageDecoder;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.transition.Fade;
@@ -34,6 +33,7 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.hifeful.diurnal.application.ConnectivityReceiver;
 import com.hifeful.diurnal.mainscreen.MainScreenActivity;
 import com.hifeful.diurnal.R;
@@ -90,6 +90,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     private AlertDialog deletePhotoDialog;
     private AlertDialog uploadPhotoCancelDialog;
     private DatePickerDialog datePickerDialog;
+    private AlertDialog photoLimitDialog;
 
     // Variables
     // false - CREATE_NOTE, true - EDIT_NOTE
@@ -99,11 +100,13 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     private boolean isRecordField = true;
     private boolean isPhotoChanged = false;
 
+    private boolean isSaving = false;
     private boolean isDeleteDialogShowing = false;
     private boolean isDeletePhotoDialogShowing = false;
     private int toDeletePhotoPosition;
     private boolean isUploadPhotoCancelDialogShowing = false;
     private boolean isDatePickerShowing = false;
+    private boolean isPhotoLimitDialogShowing = false;
 
     private int startSelection = 0;
     private int endSelection = 0;
@@ -119,7 +122,9 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
     private RecordPhotosAdapter photosAdapter;
 
+    private FirebaseUser mCurrentUser;
     private CollectionReference recordsRef;
+    private CollectionReference usersRef;
     private StorageReference mStorageRef;
     private UploadTask uploadPhotoTask;
 
@@ -127,6 +132,10 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record);
+
+        if (savedInstanceState != null) {
+            photosUri = savedInstanceState.getStringArrayList("photosUri");
+        }
 
         mRootLayout = findViewById(R.id.recordActivity_layout);
         progressBar = findViewById(R.id.recordActivity_progress_bar);
@@ -149,6 +158,13 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             calendarPicker.setOnClickListener(view -> showDatePickerDialog(noteDate));
 
             if (actionStr.contentEquals(CREATE_NOTE)) {
+                if (savedInstanceState != null) {
+                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED |
+                            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                } else {
+                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE |
+                            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                }
                 setUpNoteCreating(choseCalendar, calendar);
             } else if (actionStr.contentEquals(EDIT_NOTE)) {
                 setUpNoteEditing(calendar);
@@ -164,6 +180,8 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         recordsRef = db.collection("records");
+        usersRef = db.collection("users");
+        mCurrentUser = FirebaseAuth.getInstance().getCurrentUser();
 
         Toolbar toolbar = findViewById(R.id.recordActivity_toolbar);
         setSupportActionBar(toolbar);
@@ -178,6 +196,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
+        isSaving = true;
 
         outState.putBoolean("mode", isEditing);
 
@@ -256,12 +275,21 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         } else if (uploadPhotoCancelDialog != null) {
             if (uploadPhotoCancelDialog.isShowing()) {
                 isUploadPhotoCancelDialogShowing = true;
-
+                outState.putBoolean("isPhotoPaused", uploadPhotoTask.isPaused());
                 uploadPhotoCancelDialog.dismiss();
             } else {
                 isUploadPhotoCancelDialogShowing = false;
             }
             outState.putBoolean("isUploadPhotoCancelDialogShowing", isUploadPhotoCancelDialogShowing);
+        } else if (photoLimitDialog != null) {
+            if (photoLimitDialog.isShowing()) {
+                isPhotoLimitDialogShowing = true;
+
+                photoLimitDialog.dismiss();
+            } else {
+                isPhotoLimitDialogShowing = true;
+            }
+            outState.putBoolean("isPhotoLimitDialogShowing", isPhotoLimitDialogShowing);
         }
     }
 
@@ -288,12 +316,12 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         }
         noteDate = (Date) savedInstanceState.getSerializable("noteDate");
         isPhotoChanged = savedInstanceState.getBoolean("isPhotoChanged");
-        photosUri = savedInstanceState.getStringArrayList("photosUri");
 
         isDeleteDialogShowing = savedInstanceState.getBoolean("isDeleteDialogShowing");
         isDeletePhotoDialogShowing = savedInstanceState.getBoolean("isDeletePhotoDialogShowing");
         isUploadPhotoCancelDialogShowing = savedInstanceState.getBoolean("isUploadPhotoCancelDialogShowing");
         isDatePickerShowing = savedInstanceState.getBoolean("isDatePickerShowing");
+        isPhotoLimitDialogShowing = savedInstanceState.getBoolean("isPhotoLimitDialogShowing");
         if (isDeleteDialogShowing) {
             showConfirmDeleteDialog();
         } else if (isDeletePhotoDialogShowing) {
@@ -304,6 +332,8 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             showDatePickerDialog(selectedDate);
         } else if (isUploadPhotoCancelDialogShowing) {
             showConfirmPhotoUploadCancelDialog();
+        } else if (isPhotoLimitDialogShowing) {
+            showPhotoLimitDialog();
         }
 
         String strStorageRef = savedInstanceState.getString("storageReference");
@@ -311,8 +341,15 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             mStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(strStorageRef);
             List<UploadTask> uploadTaskList = mStorageRef.getActiveUploadTasks();
             if (uploadTaskList.size() > 0) {
+                boolean isPhotoPaused = savedInstanceState.getBoolean("isPhotoPaused");
                 UploadTask uploadTask = uploadTaskList.get(0);
+                if (isPhotoPaused) {
+                    if (uploadTask.isInProgress()) {
+                        uploadTask.pause();
+                    }
+                }
                 setPhotoUploadListeners(uploadTask, mStorageRef.getName());
+
                 uploadPhotoTask = uploadTask;
             }
         }
@@ -331,17 +368,20 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         if (action && isEditing) {
             editDoneButton.performClick();
             return;
-        } else {
-            if (checkChanges()) {
-                intent.putExtra(TITLE, titleView.getText().toString());
-                intent.putExtra(RECORD, recordView.getText().toString());
-                if (newDate != null)
-                    intent.putExtra(DATE, newDate);
-                else
-                    intent.putExtra(DATE, noteDate);
-                intent.putExtra(PHOTOS, photosUri);
-                setResult(RESULT_OK, intent);
-            }
+        }
+        if (!action && isKeyboardShowing) {
+            hideSoftKeyboard(getCurrentFocus());
+            return;
+        }
+        if (checkChanges()) {
+            intent.putExtra(TITLE, titleView.getText().toString());
+            intent.putExtra(RECORD, recordView.getText().toString());
+            if (newDate != null)
+                intent.putExtra(DATE, newDate);
+            else
+                intent.putExtra(DATE, noteDate);
+            intent.putExtra(PHOTOS, photosUri);
+            setResult(RESULT_OK, intent);
         }
         super.onBackPressed();
     }
@@ -370,9 +410,10 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         editDoneButton.setVisibility(View.GONE);
         deleteButton.setVisibility(View.GONE);
 
-        startSelection = titleView.length();
-        endSelection = titleView.length();
-        enableEditing(titleView, startSelection, endSelection, false);
+        // It needs API 28
+        titleView.requestFocus();
+
+        isEditing = true;
     }
 
     private void setUpNoteEditing(Calendar calendar) {
@@ -473,6 +514,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
     private void showSoftKeyboard(View view) {
         if(view.requestFocus()) {
+            Log.i(MainScreenActivity.TAG, getCurrentFocus().toString());
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
         }
@@ -481,6 +523,30 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     private void hideSoftKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    private void getPhotosCount() {
+
+        usersRef.document(mCurrentUser.getUid()).get()
+                .addOnCompleteListener(task -> {
+                    Long photosCount;
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot snapshot = task.getResult();
+                        if (snapshot != null && snapshot.exists()) {
+                            photosCount = snapshot.getLong("photo_count");
+                        } else {
+                            photosCount = 0L;
+                        }
+                    } else {
+                        photosCount = 0L;
+                    }
+                    if (photosCount < 50L) {
+                        RecordSelectPhotoDialog selectPhotoDialog = new RecordSelectPhotoDialog();
+                        selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                    } else {
+                        showPhotoLimitDialog();
+                    }
+                });
     }
 
     private void setUpPhotoRecycler() {
@@ -501,8 +567,8 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
             public void onClick(int position) {
                 if (position == 0) {
                         if (ConnectivityReceiver.isConnected()) {
-                            RecordSelectPhotoDialog selectPhotoDialog = new RecordSelectPhotoDialog();
-                            selectPhotoDialog.show(getSupportFragmentManager(), getString(R.string.choose_take_photo));
+                            // Get photos count from Firestore and show appropriate dialog
+                            getPhotosCount();
                         } else {
                             Snackbar.make(findViewById(R.id.recordActivity_layout),
                                     getString(R.string.internetConnectionFailedPhoto), Snackbar.LENGTH_LONG)
@@ -519,7 +585,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
 
                     getSupportFragmentManager()
                             .beginTransaction()
-                            .add(R.id.recordActivity_frame, photoFragment)
+                            .replace(android.R.id.content, photoFragment)
                             .addToBackStack(null)
                             .commit();
                 }
@@ -556,17 +622,10 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     @Override
     public void getChosenImage(Uri imagePath) {
         String imageName = createImageName();
-
+        String strImagePath = getRealImagePath(imagePath);
+        File imageFile = new File(strImagePath);
         try {
-            Bitmap imageBitmap;
-            if (Build.VERSION.SDK_INT < 28) {
-                imageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(),
-                        imagePath);
-            } else {
-                ImageDecoder.Source imageSource = ImageDecoder.createSource(this.getContentResolver(),
-                        imagePath);
-                imageBitmap = ImageDecoder.decodeBitmap(imageSource);
-            }
+            Bitmap imageBitmap = RecordSelectPhotoDialog.handleSamplingAndRotationBitmap(this, Uri.fromFile(imageFile));
             savePhotoToStorage(imageBitmap, imageName);
         } catch (IOException e) {
             e.printStackTrace();
@@ -577,6 +636,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     public void getTakenImage(File image) {
         String imageName = image.getName().substring(0, image.getName().lastIndexOf('.'));
         Uri imageUri = Uri.fromFile(image);
+        Log.i(MainScreenActivity.TAG, "getTakenImage: "  + imageUri.toString());
         try {
             Bitmap imageBitmap = RecordSelectPhotoDialog.handleSamplingAndRotationBitmap(this,
                     imageUri);
@@ -584,6 +644,23 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getRealImagePath(Uri uri){
+        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+        cursor.moveToFirst();
+        String document_id = cursor.getString(0);
+        document_id = document_id.substring(document_id.lastIndexOf(":")+1);
+        cursor.close();
+
+        cursor = getContentResolver().query(
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+        cursor.moveToFirst();
+        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+        cursor.close();
+
+        return path;
     }
 
     private boolean checkChanges() {
@@ -644,10 +721,10 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
                 .getReferenceFromUrl(photosAdapter.photos.get(position).getPhotoUrl());
         storageRef.delete().addOnSuccessListener(aVoid -> {
             Log.v(MainScreenActivity.TAG, "Photo has been deleted successfully");
+            changePhotoCount(-1);
             photosUri.remove(photosAdapter.photos.get(position).getPhotoUrl());
             photosAdapter.photos.remove(position);
             photosAdapter.notifyDataSetChanged();
-
             if (action) {
                 isPhotoChanged = true;
             } else {
@@ -662,6 +739,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         recordsRef.document(recordId).update("photos", FieldValue.arrayUnion(photoUri))
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        changePhotoCount(1);
                         photosUri.add(0, photoUri);
                         Log.v(MainScreenActivity.TAG, "Photo URL was bound to record");
                         hideProgressBar();
@@ -680,17 +758,42 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         photoUploadCancelDialogBuilder.setMessage(R.string.cancelUploadConfirmation);
 
         photoUploadCancelDialogBuilder.setPositiveButton(R.string.continueUploading, (dialogInterface, i) -> {
-            uploadPhotoTask.resume();
+            if (uploadPhotoTask != null && !uploadPhotoTask.isComplete()) {
+                uploadPhotoTask.resume();
+            }
         });
 
         photoUploadCancelDialogBuilder.setNegativeButton(R.string.cancel, (dialogInterface, i) -> {
-            uploadPhotoTask.cancel();
+            if (uploadPhotoTask != null) {
+                uploadPhotoTask.cancel();
+            }
             hideProgressBar();
         });
-        photoUploadCancelDialogBuilder.setOnDismissListener(dialogInterface -> uploadPhotoCancelDialog = null);
+        photoUploadCancelDialogBuilder.setOnDismissListener(dialogInterface -> {
+            uploadPhotoCancelDialog = null;
+            if (!isSaving) {
+                if (uploadPhotoTask != null && !uploadPhotoTask.isComplete()) {
+                    uploadPhotoTask.resume();
+                }
+            }
+        });
 
         uploadPhotoCancelDialog = photoUploadCancelDialogBuilder.create();
         uploadPhotoCancelDialog.show();
+    }
+
+    private void showPhotoLimitDialog() {
+        AlertDialog.Builder photoLimitDialogBuilder = new AlertDialog.Builder(this,
+                R.style.AlertDialogCustom);
+        photoLimitDialogBuilder.setMessage(getResources().getString(R.string.photoLimitMessageDialog));
+
+        photoLimitDialogBuilder.setCancelable(false).
+                setPositiveButton("OK", (dialogInterface, i) -> {
+            dialogInterface.dismiss();
+        });
+
+        photoLimitDialog = photoLimitDialogBuilder.create();
+        photoLimitDialog.show();
     }
 
     private void savePhotoToStorage(Bitmap photo, String photoName) {
@@ -698,9 +801,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         photo.compress(Bitmap.CompressFormat.JPEG, 100, baos);
         byte[] imageBytes = baos.toByteArray();
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-
-        String userID = user.getUid();
+        String userID = mCurrentUser.getUid();
 
        mStorageRef = FirebaseStorage.getInstance().getReference()
                 .child("images/users/" + userID + "/" + photoName);
@@ -708,17 +809,22 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         setPhotoUploadListeners(uploadPhotoTask, photoName);
     }
 
+    private void changePhotoCount(long count) {
+        usersRef.document(mCurrentUser.getUid()).update("photo_count", FieldValue.increment(count));
+    }
+
     private void setPhotoUploadListeners(UploadTask uploadTask, String photoName) {
         showProgressBar();
         uploadTask.addOnSuccessListener(this, taskSnapshot -> {
             Log.v(MainScreenActivity.TAG, "Dopy");
             Task<Uri> result = taskSnapshot.getMetadata().getReference().getDownloadUrl();
-            result.addOnSuccessListener(uri -> {
+            result.addOnSuccessListener(this, uri -> {
                 Log.v(MainScreenActivity.TAG, "Tell me this shit - " + uri.toString());
                 String photoUri = uri.toString();
                 if (action) {
                     addPhotoUriToDatabase(photoName, photoUri);
                 } else {
+                    changePhotoCount(1);
                     photosUri.add(photoUri);
 
                     hideProgressBar();
@@ -754,6 +860,7 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(selectedDate);
         datePickerDialog = new DatePickerDialog(this,
+                                                R.style.DatePickerDialogCustom,
                                                 this,
                                                 calendar.get(Calendar.YEAR),
                                                 calendar.get(Calendar.MONTH),

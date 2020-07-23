@@ -2,6 +2,8 @@ package com.hifeful.diurnal.mainscreen.records;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Build;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +16,7 @@ import android.widget.TextView;
 
 import com.hifeful.diurnal.R;
 import com.hifeful.diurnal.data.Record;
+import com.hifeful.diurnal.mainscreen.MainScreenActivity;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -32,21 +35,21 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
             implements Filterable {
     private Context context;
 
-    private ArrayList<Record> recordList;
+    public ArrayList<Record> recordList;
     public ArrayList<Record> recordListForFilter;
 
     private HashMap<String, Integer> dayNamesColors;
 
     private RecordsListener listener;
 
-    private Calendar calendar = Calendar.getInstance();
+       private Calendar calendar = Calendar.getInstance();
 
     private Filter recordsFilter = new Filter() {
         @Override
         protected FilterResults performFiltering(CharSequence charSequence) {
             ArrayList<Record> recordListFiltered = new ArrayList<>();
             if (charSequence == null || charSequence.length() == 0) {
-                recordListFiltered.addAll(recordListForFilter);
+                    recordListFiltered.addAll(recordListForFilter);
             } else {
                 // trim deletes empty spaces
                 String filterPattern = charSequence.toString().toLowerCase().trim();
@@ -113,6 +116,13 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        Locale currentLocale;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+            currentLocale = context.getResources().getConfiguration().getLocales().get(0);
+        } else {
+            currentLocale = context.getResources().getConfiguration().locale;
+        }
+
         CardView cardView = holder.cardView;
 
         TextView dayName = cardView.findViewById(R.id.date_day_text);
@@ -120,13 +130,14 @@ public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHold
         TextView month = cardView.findViewById(R.id.date_month);
 
         calendar.setTime(recordList.get(position).getDate());
-        String dayNameStr = Objects.requireNonNull(calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+        String dayNameStrDefault = Objects.requireNonNull(calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US));
+        String dayNameStr = Objects.requireNonNull(calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, currentLocale));
         dayName.setText(dayNameStr.toUpperCase());
 
-        dayName.setBackgroundColor(dayNamesColors.get(dayNameStr));
+        dayName.setBackgroundColor(dayNamesColors.get(dayNameStrDefault));
 
         dayNumber.setText(String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
-        month.setText(Objects.requireNonNull(calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US)).toUpperCase());
+        month.setText(Objects.requireNonNull(calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, currentLocale)).toUpperCase());
 
         TextView recordTitle = cardView.findViewById(R.id.record_title);
         TextView recordText = cardView.findViewById(R.id.record_text);

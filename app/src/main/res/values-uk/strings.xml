@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Diurnal</string>
+    <string name="action_settings">Налаштування</string>
+    <string name="logo">Логотип</string>
+    <string name="test">Тест</string>
+    <string name="month">Місяць</string>
+    <string name="search">Пошук</string>
+    <string name="title">Заголовок</string>
+    <string name="record">Запис</string>
+    <string name="edit">Змінити</string>
+    <string name="done">Готово</string>
+    <string name="cancel">Скасувати</string>
+    <string name="refresh">Оновити</string>
+    <string name="signInSuccess">Успішний вхід в систему!</string>
+    <string name="signInFailed">Помилка автентифікації.</string>
+    <string name="delete">Видалити</string>
+    <string name="internetConnectionSuccess">Успішне підключенння до Інтернету!</string>
+    <string name="internetConnectionFailed">Відсутнє підключення до Інтернету. Перевірте ваш зв\'язок.</string>
+    <string name="internetConnectionFailedRecords">Відсутнє підключення до Інтернету. Всі зміни не будуть збережені.</string>
+    <string name="internetConnectionFailedPhoto">Відсутнє підключення до Інтернету. Ви не зможете загрузити фото.</string>
+    <string name="deleteConfirmation">Ви дійсно хочете видалити цей запис?</string>
+    <string name="delete_photo">Видалити фото</string>
+    <string name="deletePhotoConfirmation">Це фото буде видалено.</string>
+    <string name="cancelUploadConfirmation">Фото завантажується. Хочете продовжити завантаження?</string>
+    <string name="continueUploading">Продовжити</string>
+    <string name="choose_take_photo">Сфотографуйте або виберіть фото.</string>
+    <string name="choosePhoto">Вибрати фото</string>
+    <string name="takePhoto">Сфотографувати</string>
+    <string name="permissionStorageDenied">Ви повинні дозволити доступ до сховища щоб добавити фото.</string>
+    <string name="permissionCameraDenied">Ви повинні дозволити доступ до камери щоб добавити фото.</string>
+    <string name="emptyRecordsList">Записів немає</string>
+    <string name="emptyRecordsListCalendar">Немає записів на цей день</string>
+    <string name="thought">Опишіть свої думки</string>
+    <string name="photoLimitMessage">Обмеження по фото</string>
+    <string name="photoLimitMessageDialog">Ви не можете завантажити більше ніж 50 фото.</string>
+    <string name="photo">Фото</string>
+    <string name="photoFullSizeDescription">Повнорозмірне фото</string>
+    <string name="settings">Налаштування</string>
+    <string name="darkTheme">Нічний режим</string>
+    <string name="version">Версія</string>
+    <string name="logOut">Вихід</string>
+</resources>

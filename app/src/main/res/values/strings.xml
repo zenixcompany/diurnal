@@ -41,6 +41,8 @@
 
     <string name="thought">Describe your thoughts</string>
 
+    <string name="photoLimitMessage">The limit of images</string>
+    <string name="photoLimitMessageDialog">You reached limit of 50 photos.</string>
     <string name="photo">Photo</string>
     <string name="photoFullSizeDescription">Full size photo</string>
 

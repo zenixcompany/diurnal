@@ -2,6 +2,7 @@ package com.hifeful.diurnal.mainscreen.records;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,9 +23,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import static com.hifeful.diurnal.mainscreen.MainScreenActivity.TAG;
 
 
 /**
@@ -33,11 +37,13 @@ import androidx.recyclerview.widget.RecyclerView;
 public class RecordsFragment extends Fragment {
     // UI
     public RecyclerView recordsRecycler;
+    private LinearLayoutManager mLayoutManager;
     private TextView emptyListTextView;
 
     // Variables
     private ArrayList<Record> recordsList;
     public RecordsAdapter recordsAdapter;
+    private Parcelable mListState;
 
     private FirebaseFirestore db;
     private CollectionReference collectionReference;
@@ -72,11 +78,42 @@ public class RecordsFragment extends Fragment {
         });
         recordsRecycler.setAdapter(recordsAdapter);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        recordsRecycler.setLayoutManager(layoutManager);
+        mLayoutManager = new LinearLayoutManager(getActivity());
+        recordsRecycler.setLayoutManager(mLayoutManager);
 
-        getRecordsFromDatabase();
+        if (savedInstanceState != null) {
+            ArrayList<Record> restoredItems = savedInstanceState.getParcelableArrayList("items");
+            ArrayList<Record> restoredItemsForFilter = savedInstanceState.getParcelableArrayList("itemsForFilter");
+            if (restoredItems != null) {
+                recordsList.addAll(restoredItems);
+            }
+            if (restoredItemsForFilter != null) {
+                recordsAdapter.recordListForFilter.addAll(restoredItemsForFilter);
+            }
+            recordsAdapter.notifyDataSetChanged();
+            mListState = savedInstanceState.getParcelable("state");
+        } else {
+            getRecordsFromDatabase();
+        }
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (mListState != null) {
+            mLayoutManager.onRestoreInstanceState(mListState);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putParcelableArrayList("items", recordsList);
+        outState.putParcelableArrayList("itemsForFilter", recordsAdapter.recordListForFilter);
+        outState.putParcelable("state", mLayoutManager.onSaveInstanceState());
     }
 
     public void getRecordsFromDatabase() {
@@ -93,8 +130,7 @@ public class RecordsFragment extends Fragment {
 
         recordsQuery.get().addOnCompleteListener(task -> {
            if (task.isSuccessful()) {
-               Log.v(MainScreenActivity.TAG, "Shit is being displayed");
-
+               Log.v(TAG, "Shit is being displayed");
                for (QueryDocumentSnapshot documentSnapshot : Objects.requireNonNull(task.getResult())) {
                    Record record = documentSnapshot.toObject(Record.class);
                    Collections.reverse(record.getPhotos());
@@ -106,7 +142,7 @@ public class RecordsFragment extends Fragment {
                    setUpRecyclerVisibility();
                }
            } else {
-               Log.v(MainScreenActivity.TAG, "Some shitty problem happened");
+               Log.v(TAG, "Some shitty problem happened");
            }
         });
     }

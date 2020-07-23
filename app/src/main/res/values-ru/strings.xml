@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Diurnal</string>
+    <string name="action_settings">Настройки</string>
+    <string name="logo">Логотип</string>
+    <string name="test">Тест</string>
+    <string name="month">Месяц</string>
+    <string name="search">Поиск</string>
+    <string name="title">Заголовок</string>
+    <string name="record">Запись</string>
+    <string name="edit">Изменить</string>
+    <string name="done">Готово</string>
+    <string name="cancel">Отмена</string>
+    <string name="refresh">Обновить</string>
+    <string name="signInSuccess">Успешный вход в систему!</string>
+    <string name="signInFailed">Ошибка аутентификации.</string>
+    <string name="internetConnectionSuccess">Успешное подключение к Интернету!</string>
+    <string name="internetConnectionFailed">Отсутствует подключение к Интернету. Проверьте вашу связь.</string>
+    <string name="internetConnectionFailedRecords">Отсутствует подключение к Интернету. Все изменения не будут сохранены.</string>
+    <string name="internetConnectionFailedPhoto">Отсутствует подключение к Интернету. Вы не можете загрузить фото.</string>
+    <string name="delete">Удалить</string>
+    <string name="deleteConfirmation">Вы действительно хотите удалить эту запись?</string>
+    <string name="delete_photo">Удалить фото</string>
+    <string name="deletePhotoConfirmation">Это фото будет удалено.</string>
+    <string name="cancelUploadConfirmation">Фото загружается. Хотите продолжить загрузку?</string>
+    <string name="continueUploading">Продолжить</string>
+    <string name="choose_take_photo">Сфотографируйте или выберите фото.</string>
+    <string name="choosePhoto">Выбрать фото</string>
+    <string name="takePhoto">Сфотографировать</string>
+    <string name="permissionStorageDenied">Вы должны разрешить доступ к хранилищу чтобы добавить фото.</string>
+    <string name="permissionCameraDenied">Вы должны разрешить доступ к камере чтобы добавить фото.</string>
+    <string name="emptyRecordsList">Записей нету</string>
+    <string name="emptyRecordsListCalendar">Нету записей на этот день</string>
+    <string name="thought">Опишите ваши мысли</string>
+    <string name="photoLimitMessageDialog">Вы не можете загрузить больше чем 50 фото.</string>
+    <string name="photo">Фото</string>
+    <string name="photoFullSizeDescription">Полноразмерное фото</string>
+    <string name="settings">Настройки</string>
+    <string name="darkTheme">Ночной режим</string>
+    <string name="version">Версия</string>
+    <string name="logOut">Выход</string>
+    <string name="photoLimitMessage">Ограничение по фото</string>
+</resources>

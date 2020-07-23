@@ -1,9 +1,12 @@
 package com.hifeful.diurnal.data;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.ArrayList;
 import java.util.Date;
 
-public class Record {
+public class Record implements Parcelable {
     private String user_id;
     private String note_id;
 
@@ -28,6 +31,26 @@ public class Record {
         this.date = date;
         this.photos = photos;
     }
+
+    protected Record(Parcel in) {
+        user_id = in.readString();
+        note_id = in.readString();
+        title = in.readString();
+        text = in.readString();
+        photos = in.createStringArrayList();
+    }
+
+    public static final Creator<Record> CREATOR = new Creator<Record>() {
+        @Override
+        public Record createFromParcel(Parcel in) {
+            return new Record(in);
+        }
+
+        @Override
+        public Record[] newArray(int size) {
+            return new Record[size];
+        }
+    };
 
     public String getUser_id() {
         return user_id;
@@ -84,5 +107,19 @@ public class Record {
                 ", text='" + text + '\'' +
                 ", date=" + date +
                 '}';
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeString(user_id);
+        parcel.writeString(note_id);
+        parcel.writeString(title);
+        parcel.writeString(text);
+        parcel.writeStringList(photos);
     }
 }
