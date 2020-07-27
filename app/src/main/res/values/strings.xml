@@ -50,5 +50,7 @@
     <string name="settings">Settings</string>
     <string name="darkTheme">Dark Theme</string>
     <string name="version">Version</string>
+    <string name="privacyPolicy">Privacy policy</string>
+    <string name="termsOfService">Terms of service</string>
     <string name="logOut">Log out</string>
 </resources>

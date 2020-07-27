@@ -40,4 +40,6 @@
     <string name="darkTheme">Нічний режим</string>
     <string name="version">Версія</string>
     <string name="logOut">Вихід</string>
+    <string name="privacyPolicy">Політика конфіденційності</string>
+    <string name="termsOfService">Умови використання</string>
 </resources>

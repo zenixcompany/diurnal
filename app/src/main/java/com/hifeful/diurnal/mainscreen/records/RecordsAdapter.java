@@ -30,6 +30,8 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import static com.hifeful.diurnal.mainscreen.MainScreenActivity.TAG;
+
 
 public class RecordsAdapter extends RecyclerView.Adapter<RecordsAdapter.ViewHolder>
             implements Filterable {

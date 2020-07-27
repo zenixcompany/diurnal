@@ -1,6 +1,7 @@
 package com.hifeful.diurnal.mainscreen.calendar;
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 
@@ -75,15 +76,21 @@ public class CalendarFragment extends Fragment {
             float density = getResources().getDisplayMetrics().density;
             float dpWidth = view.getWidth() / density;
             if (dpWidth < 600) {
-                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(view.getWidth(),
-                        view.getHeight() / 2);
-                calendarView.setLayoutParams(layoutParams);
-
+                int orientation = getResources().getConfiguration().orientation;
+                if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(view.getWidth(),
+                            (view.getHeight() / 2));
+                    calendarView.setLayoutParams(layoutParams);
+                } else {
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(view.getWidth(),
+                            (view.getHeight() / 2) - (view.getHeight() / 8));
+                    calendarView.setLayoutParams(layoutParams);
+                }
             } else {
                 int width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 600,
                         getResources().getDisplayMetrics());
                 LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(width,
-                        view.getHeight() / 2);
+                        (view.getHeight() / 2) - (view.getHeight() / 8));
                 layoutParams.gravity = Gravity.CENTER;
                 calendarView.setLayoutParams(layoutParams);
 

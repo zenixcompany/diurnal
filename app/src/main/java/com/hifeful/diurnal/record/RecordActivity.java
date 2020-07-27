@@ -22,6 +22,7 @@ import android.widget.EditText;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -35,6 +36,7 @@ import android.widget.RelativeLayout;
 
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.hifeful.diurnal.application.ConnectivityReceiver;
+import com.hifeful.diurnal.application.MyApplication;
 import com.hifeful.diurnal.mainscreen.MainScreenActivity;
 import com.hifeful.diurnal.R;
 import com.hifeful.diurnal.data.Photo;
@@ -131,6 +133,11 @@ public class RecordActivity extends AppCompatActivity implements RecordSelectPho
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (MyApplication.getInstance().isNightModeEnabled()) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
         setContentView(R.layout.activity_record);
 
         if (savedInstanceState != null) {

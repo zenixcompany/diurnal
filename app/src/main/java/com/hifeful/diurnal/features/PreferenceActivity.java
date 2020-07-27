@@ -10,11 +10,15 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 import androidx.preference.SwitchPreferenceCompat;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -85,6 +89,28 @@ public class PreferenceActivity extends AppCompatActivity {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.main_preference, rootKey);
+
+            Preference privacyPref = findPreference("privacy_policy");
+            assert privacyPref != null;
+            privacyPref.setOnPreferenceClickListener(preference -> {
+                Intent intent = new Intent(getContext(), WebActivity.class);
+                intent.putExtra("link", "https://diurnal.flycricket.io/privacy.html");
+                intent.putExtra("title", getResources().getString(R.string.privacyPolicy));
+                startActivity(intent);
+
+                return true;
+            });
+
+            Preference termsPref = findPreference("terms_of_service");
+            assert termsPref != null;
+            termsPref.setOnPreferenceClickListener(preference -> {
+                Intent intent = new Intent(getContext(), WebActivity.class);
+                intent.putExtra("link", "https://diurnal.flycricket.io/terms.html");
+                intent.putExtra("title", getResources().getString(R.string.termsOfService));
+                startActivity(intent);
+
+                return true;
+            });
 
             Preference versionPref = findPreference("version");
             assert versionPref != null;

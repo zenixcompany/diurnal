@@ -4,9 +4,17 @@
     <SwitchPreferenceCompat
         android:key="dark_theme"
         android:title="@string/darkTheme"/>
+
+    <Preference android:key="privacy_policy"
+        android:title="@string/privacyPolicy"/>
+
+    <Preference android:key="terms_of_service"
+        android:title="@string/termsOfService"/>
+
     <Preference
         android:key="version"
         android:title="@string/version" />
+
     <Preference
         android:key="log_out"
         android:title="@string/logOut"/>

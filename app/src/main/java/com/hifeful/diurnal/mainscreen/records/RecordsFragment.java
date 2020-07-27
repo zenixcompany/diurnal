@@ -63,6 +63,7 @@ public class RecordsFragment extends Fragment {
 
         recordsList = new ArrayList<>();
         recordsAdapter = new RecordsAdapter(getContext(), recordsList);
+
         recordsAdapter.setListener(position -> {
             Intent intent = new Intent(getActivity(), RecordActivity.class);
 
@@ -82,6 +83,7 @@ public class RecordsFragment extends Fragment {
         recordsRecycler.setLayoutManager(mLayoutManager);
 
         if (savedInstanceState != null) {
+
             ArrayList<Record> restoredItems = savedInstanceState.getParcelableArrayList("items");
             ArrayList<Record> restoredItemsForFilter = savedInstanceState.getParcelableArrayList("itemsForFilter");
             if (restoredItems != null) {

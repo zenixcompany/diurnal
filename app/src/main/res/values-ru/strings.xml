@@ -40,4 +40,6 @@
     <string name="version">Версия</string>
     <string name="logOut">Выход</string>
     <string name="photoLimitMessage">Ограничение по фото</string>
+    <string name="privacyPolicy">Политика конфиденциальности</string>
+    <string name="termsOfService">Условия использования</string>
 </resources>

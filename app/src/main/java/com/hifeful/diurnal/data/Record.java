@@ -37,6 +37,7 @@ public class Record implements Parcelable {
         note_id = in.readString();
         title = in.readString();
         text = in.readString();
+        date = new Date(in.readLong());
         photos = in.createStringArrayList();
     }
 
@@ -120,6 +121,8 @@ public class Record implements Parcelable {
         parcel.writeString(note_id);
         parcel.writeString(title);
         parcel.writeString(text);
+        // TODO Write to parcel Date (should be 6 values in Record object)
+        parcel.writeLong(date.getTime());
         parcel.writeStringList(photos);
     }
 }
