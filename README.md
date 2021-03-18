@@ -9,3 +9,7 @@ A simple diary app to journal your major intentions and memories.
  * Firebase (Authentication, Cloud Firestore, Storage, Analytics, Crashlytics)
  * Material Design
  * Picasso
+ # Features
+ * Night mode
+ * Tablet and phone screen size support
+ * Localization (English, Russian, Ukrainian)
